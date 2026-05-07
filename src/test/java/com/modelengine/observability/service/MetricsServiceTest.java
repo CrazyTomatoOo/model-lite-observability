@@ -12,8 +12,6 @@ import com.modelengine.observability.dto.DataPointDTO;
 import com.modelengine.observability.dto.MetricSeriesDTO;
 import com.modelengine.observability.dto.MetricsRangeQueryDTO;
 import com.modelengine.observability.dto.MetricsRangeResponseDTO;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.Pod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,13 +64,6 @@ class MetricsServiceTest {
 
     // ─── Helpers ───
 
-    private Pod createPod(String name) {
-        Pod pod = new Pod();
-        ObjectMeta metadata = new ObjectMeta();
-        metadata.setName(name);
-        pod.setMetadata(metadata);
-        return pod;
-    }
 
     private MetricsDefinitionLoader.MetricDefinition createDef(String name, String aggregation) {
         AggregationType agg = AggregationType.valueOf(aggregation.toUpperCase());
@@ -94,23 +84,12 @@ class MetricsServiceTest {
                 .build();
     }
 
-    private MetricSeriesDTO createSeries(String name, List<DataPointDTO> points) {
-        return MetricSeriesDTO.builder()
-                .metricName(name)
-                .displayName(name + " Display")
-                .unit("count")
-                .aggregation("avg")
-                .dataPoints(points)
-                .build();
-    }
 
     // ─── Tests ───
 
     @Test
     void responseContainsInstanceNameNotServiceId() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("my-instance")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def = createDef("ttft", "AVG");
         when(metricsDefinitionLoader.getDefinitions()).thenReturn(List.of(def));
@@ -121,12 +100,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        MetricSeriesDTO aggregated = createSeries("ttft", List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(100.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622860)).value(200.0).build()
-        ));
-        when(metricsAggregator.aggregate(anyList(), eq(MetricsAggregator.AggregationType.AVG)))
-                .thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .startTime("2025-01-23T00:00:00Z")
@@ -148,8 +121,6 @@ class MetricsServiceTest {
     @Test
     void emptyMetricsQueriesAllDefinitions() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("inst-1")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def1 = createDef("ttft", "AVG");
         MetricsDefinitionLoader.MetricDefinition def2 = createDef("qps", "SUM");
@@ -160,11 +131,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        MetricSeriesDTO aggregated = createSeries("test", List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(100.0).build()
-        ));
-        when(metricsAggregator.aggregate(anyList(), any()))
-                .thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .metrics(List.of())  // empty → all
@@ -186,8 +152,6 @@ class MetricsServiceTest {
     @Test
     void nullMetricsQueriesAllDefinitions() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("inst-2")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def = createDef("ttft", "AVG");
         when(metricsDefinitionLoader.getDefinitions()).thenReturn(List.of(def));
@@ -197,10 +161,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        MetricSeriesDTO aggregated = createSeries("ttft", List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(100.0).build()
-        ));
-        when(metricsAggregator.aggregate(anyList(), any())).thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .metrics(null)  // null → all
@@ -221,8 +181,6 @@ class MetricsServiceTest {
     @Test
     void specificMetricsFilterQuery() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("inst-3")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def1 = createDef("ttft", "AVG");
         MetricsDefinitionLoader.MetricDefinition def2 = createDef("qps", "SUM");
@@ -234,10 +192,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        MetricSeriesDTO aggregated = createSeries("test", List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(100.0).build()
-        ));
-        when(metricsAggregator.aggregate(anyList(), any())).thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .metrics(List.of("ttft", "qps"))  // only these two
@@ -257,8 +211,6 @@ class MetricsServiceTest {
     @Test
     void limitTruncatesDataPoints() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("inst-4")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def = createDef("ttft", "AVG");
         when(metricsDefinitionLoader.getDefinitions()).thenReturn(List.of(def));
@@ -272,15 +224,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        // aggregator should return the series of 5 points
-        MetricSeriesDTO aggregated = createSeries("ttft", List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(1.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622860)).value(2.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622920)).value(3.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622980)).value(4.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737623040)).value(5.0).build()
-        ));
-        when(metricsAggregator.aggregate(anyList(), any())).thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .startTime("2025-01-23T00:00:00Z")
@@ -303,8 +246,6 @@ class MetricsServiceTest {
     @Test
     void limitZeroMeansNoTruncation() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("inst-5")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def = createDef("ttft", "AVG");
         when(metricsDefinitionLoader.getDefinitions()).thenReturn(List.of(def));
@@ -318,14 +259,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        MetricSeriesDTO aggregated = createSeries("ttft", new ArrayList<>(List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(1.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622860)).value(2.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622920)).value(3.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622980)).value(4.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737623040)).value(5.0).build()
-        )));
-        when(metricsAggregator.aggregate(anyList(), any())).thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .startTime("2025-01-23T00:00:00Z")
@@ -344,8 +277,6 @@ class MetricsServiceTest {
     @Test
     void limitNullMeansNoTruncation() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("inst-6")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def = createDef("ttft", "AVG");
         when(metricsDefinitionLoader.getDefinitions()).thenReturn(List.of(def));
@@ -356,11 +287,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        MetricSeriesDTO aggregated = createSeries("ttft", List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(1.0).build(),
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622860)).value(2.0).build()
-        ));
-        when(metricsAggregator.aggregate(anyList(), any())).thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .startTime("2025-01-23T00:00:00Z")
@@ -379,8 +305,6 @@ class MetricsServiceTest {
     @Test
     void unixTimestampStartAndEndTime() {
         // Given
-        Pod pod = createPod("test-pod");
-        when(topologyService.getPodsForInstance("inst-7")).thenReturn(List.of(pod));
 
         MetricsDefinitionLoader.MetricDefinition def = createDef("ttft", "AVG");
         when(metricsDefinitionLoader.getDefinitions()).thenReturn(List.of(def));
@@ -390,10 +314,6 @@ class MetricsServiceTest {
         ));
         when(prometheusClient.queryRange(anyString(), any(), any(), any(), any())).thenReturn(promResp);
 
-        MetricSeriesDTO aggregated = createSeries("ttft", List.of(
-                DataPointDTO.builder().timestamp(Instant.ofEpochSecond(1737622800)).value(100.0).build()
-        ));
-        when(metricsAggregator.aggregate(anyList(), any())).thenReturn(aggregated);
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .startTime(1737622800)  // Unix timestamp number
@@ -419,7 +339,7 @@ class MetricsServiceTest {
     @Test
     void noPodsReturnsEmptyResponse() {
         // Given
-        when(topologyService.getPodsForInstance("empty-inst")).thenReturn(List.of());
+        when(metricsDefinitionLoader.getDefinitions()).thenReturn(List.of());
 
         MetricsRangeQueryDTO query = MetricsRangeQueryDTO.builder()
                 .startTime("2025-01-23T00:00:00Z")

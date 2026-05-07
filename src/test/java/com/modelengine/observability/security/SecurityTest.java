@@ -5,6 +5,7 @@ import com.modelengine.observability.service.HealthCheckService;
 import com.modelengine.observability.service.ModelServiceService;
 import com.modelengine.observability.service.MetricsService;
 import com.modelengine.observability.config.SecurityConfig;
+import com.modelengine.observability.config.MetricsDefinitionLoader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -45,6 +46,9 @@ class SecurityTest {
 
     @MockBean
     private MetricsService metricsService;
+
+    @MockBean
+    private MetricsDefinitionLoader metricsDefinitionLoader;
     private HealthStatusDTO buildHealthyStatus() {
         Map<String, String> components = new LinkedHashMap<>();
         components.put("prometheus", "connected");

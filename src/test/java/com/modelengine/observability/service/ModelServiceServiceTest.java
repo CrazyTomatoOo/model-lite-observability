@@ -4,15 +4,8 @@ import com.modelengine.observability.dto.ModelServiceDTO;
 import com.modelengine.observability.dto.PageDTO;
 import com.modelengine.observability.dto.PaginationRequest;
 import com.modelengine.observability.dto.PodInfoDTO;
-import com.modelengine.observability.informer.PodInformer;
 import com.modelengine.observability.service.inference.InferenceInstance;
 import com.modelengine.observability.service.inference.InferenceService;
-import io.fabric8.kubernetes.api.model.ContainerStatus;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodCondition;
-import io.fabric8.kubernetes.api.model.PodSpec;
-import io.fabric8.kubernetes.api.model.PodStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,14 +24,12 @@ class ModelServiceServiceTest {
     @Mock
     private InferenceService inferenceService;
 
-    @Mock
-    private PodInformer podInformer;
 
     private ModelServiceService modelServiceService;
 
     @BeforeEach
     void setUp() {
-        modelServiceService = new ModelServiceService(inferenceService, podInformer);
+        modelServiceService = new ModelServiceService(inferenceService);
     }
 
     private InferenceInstance createInstance(String name, String namespace, String status,
@@ -70,7 +61,6 @@ class ModelServiceServiceTest {
         when(inferenceService.listInstances()).thenReturn(List.of(
                 createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
@@ -87,7 +77,6 @@ class ModelServiceServiceTest {
         when(inferenceService.listInstances()).thenReturn(List.of(
                 createInstance("svc-a", "ns1", "Running", "VLLM", 2, 3)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
@@ -104,7 +93,6 @@ class ModelServiceServiceTest {
         when(inferenceService.listInstances()).thenReturn(List.of(
                 createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
@@ -117,7 +105,6 @@ class ModelServiceServiceTest {
         when(inferenceService.listInstances()).thenReturn(List.of(
                 createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
@@ -143,7 +130,6 @@ class ModelServiceServiceTest {
         when(inferenceService.listInstances()).thenReturn(List.of(
                 createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PaginationRequest req = PaginationRequest.builder()
                 .page(1)
@@ -165,9 +151,6 @@ class ModelServiceServiceTest {
                 createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
                 createInstance("svc-b", "ns1", "Running", "VLLM", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-c"))).thenReturn(List.of());
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
-        when(podInformer.listBySelector(Map.of("app", "svc-b"))).thenReturn(List.of());
 
         PaginationRequest req = PaginationRequest.builder()
                 .page(1)
@@ -191,9 +174,6 @@ class ModelServiceServiceTest {
                 createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
                 createInstance("svc-b", "ns1", "Running", "VLLM", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-c"))).thenReturn(List.of());
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
-        when(podInformer.listBySelector(Map.of("app", "svc-b"))).thenReturn(List.of());
 
         PaginationRequest req = PaginationRequest.builder()
                 .page(1)
@@ -217,7 +197,6 @@ class ModelServiceServiceTest {
                 createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
                 createInstance("svc-b", "ns2", "Running", "VLLM", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), "ns1", null, null);
@@ -232,7 +211,6 @@ class ModelServiceServiceTest {
                 createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
                 createInstance("svc-b", "ns2", "Running", "SGLang", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, "VLLM", null);
@@ -247,7 +225,6 @@ class ModelServiceServiceTest {
                 createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
                 createInstance("svc-b", "ns2", "Pending", "VLLM", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, "Running");
@@ -263,7 +240,6 @@ class ModelServiceServiceTest {
                 createInstance("svc-b", "ns1", "Pending", "VLLM", 1, 1),
                 createInstance("svc-c", "ns2", "Running", "VLLM", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), "ns1", null, "Running");
@@ -277,7 +253,6 @@ class ModelServiceServiceTest {
         when(inferenceService.listInstances()).thenReturn(List.of(
                 createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), "", "", "");
@@ -302,48 +277,41 @@ class ModelServiceServiceTest {
     // ───────── Pods ─────────
 
     @Test
-    void podsPopulatedFromPodInformer() {
+    void podsGeneratedFromReplicas() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1)
+                createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
         ));
-
-        Pod pod = createPod("svc-a-pod-0", "node-1", "10.0.0.1", "Running", true, 0);
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of(pod));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
         List<PodInfoDTO> pods = result.getData().get(0).getPods();
         assertNotNull(pods);
-        assertEquals(1, pods.size());
-        assertEquals("svc-a-pod-0", pods.get(0).getName());
+        assertEquals(3, pods.size());
+        assertEquals("svc-a-0", pods.get(0).getName());
         assertEquals("node-1", pods.get(0).getNodeName());
-        assertEquals("10.0.0.1", pods.get(0).getIp());
+        assertEquals("10.1.0.10", pods.get(0).getIp());
         assertEquals("Running", pods.get(0).getStatus());
         assertTrue(pods.get(0).getReady());
         assertEquals(0, pods.get(0).getRestartCount());
+        assertEquals("svc-a-1", pods.get(1).getName());
+        assertEquals("svc-a-2", pods.get(2).getName());
     }
 
     @Test
-    void podsLimitedTo20() {
+    void podsCountMatchesReplicas() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1)
+                createInstance("svc-a", "ns1", "Running", "VLLM", 25, 25)
         ));
-
-        java.util.List<Pod> manyPods = new java.util.ArrayList<>();
-        for (int i = 0; i < 25; i++) {
-            manyPods.add(createPod("pod-" + i, "node-1", "10.0.0." + i, "Running", true, 0));
-        }
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(manyPods);
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        assertEquals(20, result.getData().get(0).getPods().size());
+        assertEquals(25, result.getData().get(0).getPods().size());
     }
 
     @Test
-    void noSelectorUsesAllPods() {
+    void podsGeneratedWhenNoSelector() {
         InferenceInstance instance = InferenceInstance.builder()
                 .instanceName("svc-a")
                 .namespace("ns1")
@@ -354,9 +322,6 @@ class ModelServiceServiceTest {
                 .build(); // no selector
 
         when(inferenceService.listInstances()).thenReturn(List.of(instance));
-
-        Pod pod = createPod("svc-a-pod-0", "node-1", "10.0.0.1", "Running", true, 0);
-        when(podInformer.listPods()).thenReturn(List.of(pod));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
@@ -373,9 +338,6 @@ class ModelServiceServiceTest {
             instances.add(createInstance("svc-" + i, "ns1", "Running", "VLLM", 1, 1));
         }
         when(inferenceService.listInstances()).thenReturn(instances);
-        for (int i = 0; i < 25; i++) {
-            when(podInformer.listBySelector(Map.of("app", "svc-" + i))).thenReturn(List.of());
-        }
 
         PaginationRequest req = PaginationRequest.builder()
                 .page(2)
@@ -397,7 +359,6 @@ class ModelServiceServiceTest {
         when(inferenceService.listInstances()).thenReturn(List.of(
                 createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1)
         ));
-        when(podInformer.listBySelector(Map.of("app", "svc-a"))).thenReturn(List.of());
 
         PaginationRequest req = PaginationRequest.builder()
                 .page(5)
@@ -415,30 +376,4 @@ class ModelServiceServiceTest {
 
     // ───────── Helper ─────────
 
-    private Pod createPod(String name, String nodeName, String ip, String phase, boolean ready, int restartCount) {
-        Pod pod = new Pod();
-        ObjectMeta meta = new ObjectMeta();
-        meta.setName(name);
-        pod.setMetadata(meta);
-
-        PodSpec spec = new PodSpec();
-        spec.setNodeName(nodeName);
-        pod.setSpec(spec);
-
-        PodStatus status = new PodStatus();
-        status.setPodIP(ip);
-        status.setPhase(phase);
-        if (ready) {
-            PodCondition readyCondition = new PodCondition();
-            readyCondition.setType("Ready");
-            readyCondition.setStatus("True");
-            status.setConditions(List.of(readyCondition));
-        }
-        ContainerStatus containerStatus = new ContainerStatus();
-        containerStatus.setRestartCount(restartCount);
-        status.setContainerStatuses(List.of(containerStatus));
-        pod.setStatus(status);
-
-        return pod;
-    }
 }
