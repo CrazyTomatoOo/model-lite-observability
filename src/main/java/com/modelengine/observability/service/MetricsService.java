@@ -67,55 +67,20 @@ public class MetricsService {
     }
 
     private List<MetricSeriesDTO> loadServiceMetrics(String instanceName) {
-        List<Pod> pods = topologyService.getPodsForInstance(instanceName);
-        if (pods.isEmpty()) {
-            log.warn("No pods found for service: {}", instanceName);
-            return List.of();
-        }
+        List<MetricsDefinitionLoader.MetricDefinition> definitions = metricsDefinitionLoader.getDefinitions();
+        if (definitions.isEmpty()) return List.of();
 
         List<MetricSeriesDTO> serviceMetrics = new ArrayList<>();
-        List<MetricsDefinitionLoader.MetricDefinition> definitions = metricsDefinitionLoader.getDefinitions();
-
-        if (definitions.isEmpty()) {
-            log.warn("No metric definitions configured");
-            return List.of();
-        }
-
         for (MetricsDefinitionLoader.MetricDefinition def : definitions) {
-            List<MetricSeriesDTO> podMetrics = new ArrayList<>();
-
-            for (Pod pod : pods) {
-                String podName = pod.getMetadata() != null ? pod.getMetadata().getName() : "";
-                if (podName.isEmpty()) {
-                    continue;
-                }
-
-                String promQL = String.format(def.promqlTemplate(), podName);
-                MetricSeriesDTO series = queryInstantMetric(promQL, def, podName);
-                if (series != null) {
-                    podMetrics.add(series);
-                }
-            }
-
-            if (!podMetrics.isEmpty()) {
-                MetricSeriesDTO aggregated = metricsAggregator.aggregate(podMetrics, def.aggregationType());
-                if (aggregated != null) {
-                    serviceMetrics.add(aggregated);
-                }
-            }
+            String promQL = def.promqlTemplate().replace("%s", instanceName);
+            MetricSeriesDTO series = queryInstantMetric(promQL, def);
+            if (series != null) serviceMetrics.add(series);
         }
-
-        log.debug("Loaded {} metrics for service {}", serviceMetrics.size(), instanceName);
+        log.debug("Loaded {} metrics for {}", serviceMetrics.size(), instanceName);
         return serviceMetrics;
     }
 
     private MetricsRangeResponseDTO loadServiceMetricsRange(String instanceName, MetricsRangeQueryDTO query) {
-        List<Pod> pods = topologyService.getPodsForInstance(instanceName);
-        if (pods.isEmpty()) {
-            log.warn("No pods found for service: {}", instanceName);
-            return buildEmptyRangeResponse(instanceName, query);
-        }
-
         Instant start = TimeParser.parseTime(query.getStartTime());
         Instant end = TimeParser.parseTime(query.getEndTime());
         Duration step = StepParser.parseStep(query.getStep());
@@ -127,29 +92,10 @@ public class MetricsService {
                 .toList();
 
         List<MetricSeriesDTO> serviceMetrics = new ArrayList<>();
-
         for (MetricsDefinitionLoader.MetricDefinition def : defsToQuery) {
-            List<MetricSeriesDTO> podMetrics = new ArrayList<>();
-
-            for (Pod pod : pods) {
-                String podName = pod.getMetadata() != null ? pod.getMetadata().getName() : "";
-                if (podName.isEmpty()) {
-                    continue;
-                }
-
-                String promQL = String.format(def.promqlTemplate(), podName);
-                MetricSeriesDTO series = queryRangeMetric(promQL, def, podName, start, end, step, timeout);
-                if (series != null) {
-                    podMetrics.add(series);
-                }
-            }
-
-            if (!podMetrics.isEmpty()) {
-                MetricSeriesDTO aggregated = metricsAggregator.aggregate(podMetrics, def.aggregationType());
-                if (aggregated != null) {
-                    serviceMetrics.add(aggregated);
-                }
-            }
+            String promQL = def.promqlTemplate().replace("%s", instanceName);
+            MetricSeriesDTO series = queryRangeMetric(promQL, def, start, end, step, timeout);
+            if (series != null) serviceMetrics.add(series);
         }
 
         // Apply limit: if limit > 0, truncate dataPoints in each metric series
@@ -187,91 +133,55 @@ public class MetricsService {
                 .toList();
     }
 
-    private MetricSeriesDTO queryInstantMetric(String promQL, MetricsDefinitionLoader.MetricDefinition definition, String podName) {
+    private MetricSeriesDTO queryInstantMetric(String promQL, MetricsDefinitionLoader.MetricDefinition definition) {
         try {
             PrometheusResponse response = prometheusClient.query(promQL);
-            if (!response.isSuccess() || !response.hasData()) {
-                log.debug("No data for metric {} on pod {}", definition.metricName(), podName);
-                return null;
-            }
-
+            if (!response.isSuccess() || !response.hasData()) return null;
             List<DataPointDTO> dataPoints = new ArrayList<>();
             for (PrometheusResult result : response.getData().getResult()) {
                 Double value = extractValue(result.getValue());
-                if (value != null) {
-                    dataPoints.add(DataPointDTO.builder()
-                            .timestamp(Instant.now())
-                            .value(value)
-                            .build());
-                }
+                if (value != null) dataPoints.add(DataPointDTO.builder().timestamp(Instant.now()).value(value).build());
             }
-
-            if (dataPoints.isEmpty()) {
-                return null;
-            }
-
+            if (dataPoints.isEmpty()) return null;
             return MetricSeriesDTO.builder()
-                    .metricName(definition.metricName())
-                    .displayName(definition.displayName())
+                    .metricName(definition.metricName()).displayName(definition.displayName())
                     .unit(definition.unit())
-                    .aggregation(definition.aggregationType().name().toLowerCase())
-                    .dataPoints(dataPoints)
-                    .build();
+                    .dataPoints(dataPoints).build();
         } catch (Exception e) {
-            log.warn("Failed to query metric {} for pod {}: {}", definition.metricName(), podName, e.getMessage());
+            log.warn("Failed to query metric {}: {}", definition.metricName(), e.getMessage());
             return null;
         }
     }
 
-    private MetricSeriesDTO queryRangeMetric(
-            String promQL,
-            MetricsDefinitionLoader.MetricDefinition definition,
-            String podName,
-            Instant start,
-            Instant end,
-            Duration step,
-            Duration timeout
-    ) {
+    private MetricSeriesDTO queryRangeMetric(String promQL, MetricsDefinitionLoader.MetricDefinition definition,
+                                              Instant start, Instant end, Duration step, Duration timeout) {
         try {
             PrometheusResponse response = prometheusClient.queryRange(promQL, start, end, step, timeout);
-            if (!response.isSuccess() || !response.hasData()) {
-                log.debug("No range data for metric {} on pod {}", definition.metricName(), podName);
-                return null;
-            }
-
+            if (!response.isSuccess() || !response.hasData()) return null;
             List<DataPointDTO> dataPoints = new ArrayList<>();
             for (PrometheusResult result : response.getData().getResult()) {
-                List<DataPointDTO> points = extractValues(result.getValues());
-                dataPoints.addAll(points);
+                dataPoints.addAll(extractValues(result.getValues()));
             }
-
-            if (dataPoints.isEmpty()) {
-                return null;
-            }
-
+            if (dataPoints.isEmpty()) return null;
             dataPoints.sort(Comparator.comparing(DataPointDTO::getTimestamp));
-
             return MetricSeriesDTO.builder()
-                    .metricName(definition.metricName())
-                    .displayName(definition.displayName())
+                    .metricName(definition.metricName()).displayName(definition.displayName())
                     .unit(definition.unit())
-                    .aggregation(definition.aggregationType().name().toLowerCase())
-                    .dataPoints(dataPoints)
-                    .build();
+                    .dataPoints(dataPoints).build();
         } catch (Exception e) {
-            log.warn("Failed to query range metric {} for pod {}: {}", definition.metricName(), podName, e.getMessage());
+            log.warn("Failed to query range metric {}: {}", definition.metricName(), e.getMessage());
             return null;
         }
     }
 
     @SuppressWarnings("unchecked")
     private Double extractValue(Object valueObj) {
+        if (valueObj instanceof com.fasterxml.jackson.databind.node.ArrayNode arr && arr.size() >= 2) {
+            try { return arr.get(1).asDouble(); } catch (Exception ignored) {}
+        }
         if (valueObj instanceof List<?> valueList && valueList.size() >= 2) {
-            try {
-                return Double.parseDouble(valueList.get(1).toString());
-            } catch (NumberFormatException e) {
-                log.debug("Failed to parse value: {}", valueList.get(1));
-            }
+            try { return Double.parseDouble(valueList.get(1).toString()); }
+            catch (NumberFormatException e) { log.debug("Failed to parse value: {}", valueList.get(1)); }
         }
         return null;
     }
@@ -279,19 +189,25 @@ public class MetricsService {
     @SuppressWarnings("unchecked")
     private List<DataPointDTO> extractValues(Object valuesObj) {
         List<DataPointDTO> dataPoints = new ArrayList<>();
-        if (valuesObj instanceof List<?> valuesList) {
+        if (valuesObj instanceof com.fasterxml.jackson.databind.node.ArrayNode arr) {
+            for (int i = 0; i < arr.size(); i++) {
+                var pair = arr.get(i);
+                if (pair.isArray() && pair.size() >= 2) {
+                    try {
+                        dataPoints.add(DataPointDTO.builder()
+                                .timestamp(Instant.ofEpochSecond(pair.get(0).asLong()))
+                                .value(pair.get(1).asDouble()).build());
+                    } catch (Exception ignored) {}
+                }
+            }
+        } else if (valuesObj instanceof List<?> valuesList) {
             for (Object item : valuesList) {
                 if (item instanceof List<?> pair && pair.size() >= 2) {
                     try {
-                        long epochSeconds = Long.parseLong(pair.get(0).toString());
-                        double value = Double.parseDouble(pair.get(1).toString());
                         dataPoints.add(DataPointDTO.builder()
-                                .timestamp(Instant.ofEpochSecond(epochSeconds))
-                                .value(value)
-                                .build());
-                    } catch (NumberFormatException | IndexOutOfBoundsException e) {
-                        log.debug("Failed to parse data point: {}", item);
-                    }
+                                .timestamp(Instant.ofEpochSecond(Long.parseLong(pair.get(0).toString())))
+                                .value(Double.parseDouble(pair.get(1).toString())).build());
+                    } catch (NumberFormatException | IndexOutOfBoundsException ignored) {}
                 }
             }
         }

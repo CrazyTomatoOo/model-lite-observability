@@ -25,8 +25,8 @@ spec:
           env:
             - name: EXPORTER_PORT
               value: "9091"
-            - name: POD_NAMES
-              value: "model-inference-7b-001,model-inference-7b-002"
+            - name: MODEL_NAMES
+              value: "llama3-70b,qwen2-7b"
           resources:
             limits:
               memory: "128Mi"

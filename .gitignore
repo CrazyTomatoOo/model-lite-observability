@@ -3,3 +3,4 @@ target/
 .settings/
 jre-local/
 __pycache__/
+.gitnexus

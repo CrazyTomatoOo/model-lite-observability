@@ -54,15 +54,12 @@ public class PrometheusClientImpl implements PrometheusClient {
         return executeWithRetry(URI.create(url), "instant query");
     }
     
-    @Override
     public PrometheusResponse queryRange(String promQL, Instant start, Instant end, Duration step, Duration timeout) {
         log.debug("Executing Prometheus range query: {} from {} to {} step {}", 
                   promQL, start, end, step);
-        String url = String.format(
-            "%s/api/v1/query_range?query=%s&start=%s&end=%s&step=%s&timeout=%ss",
-            properties.getPrometheus().getUrl(), encodePromQL(promQL),
-            start.getEpochSecond(), end.getEpochSecond(),
-            step.getSeconds(), timeout.toSeconds());
+        String url = properties.getPrometheus().getUrl() + "/api/v1/query_range?query=" + encodePromQL(promQL) +
+            "&start=" + start.getEpochSecond() + "&end=" + end.getEpochSecond() +
+            "&step=" + step.getSeconds() + "&timeout=" + timeout.toSeconds() + "s";
         return executeWithRetry(URI.create(url), "range query");
     }
     

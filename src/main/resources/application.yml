@@ -43,57 +43,46 @@ observability:
     refresh-interval: 60s
     definitions:
       - metric-name: ttft
-        promql-template: 'ttft_ms{pod="%s"}'
+        promql-template: '(time_to_first_token_seconds_sum{model_name="%s"} / time_to_first_token_seconds_count{model_name="%s"}) * 1000'
         display-name: Time To First Token
         unit: ms
-        aggregation-type: AVG
       - metric-name: tpot
-        promql-template: 'tpot_ms{pod="%s"}'
+        promql-template: '(time_per_output_token_seconds_sum{model_name="%s"} / time_per_output_token_seconds_count{model_name="%s"}) * 1000'
         display-name: Time Per Output Token
         unit: ms
-        aggregation-type: AVG
       - metric-name: generation_tokens
-        promql-template: 'generation_tokens_total{pod="%s"}'
+        promql-template: 'generation_tokens_total{model_name="%s"}'
         display-name: Generation Tokens
         unit: tokens
-        aggregation-type: SUM
       - metric-name: prompt_throughput
-        promql-template: 'prompt_throughput{pod="%s"}'
+        promql-template: 'avg_prompt_throughput_toks_per_s{model_name="%s"}'
         display-name: Prompt Throughput
         unit: tokens/s
-        aggregation-type: AVG
       - metric-name: decode_throughput
-        promql-template: 'decode_throughput{pod="%s"}'
+        promql-template: 'avg_generation_throughput_toks_per_s{model_name="%s"}'
         display-name: Decode Throughput
         unit: tokens/s
-        aggregation-type: AVG
       - metric-name: qps
-        promql-template: 'qps{pod="%s"}'
+        promql-template: 'rate(request_received_total{model_name="%s"}[1m])'
         display-name: Queries Per Second
         unit: qps
-        aggregation-type: SUM
       - metric-name: connections
-        promql-template: 'concurrent_connections{pod="%s"}'
+        promql-template: 'num_requests_running{model_name="%s"}'
         display-name: Concurrent Connections
         unit: connections
-        aggregation-type: SUM
       - metric-name: success_rate
-        promql-template: 'request_success_rate{pod="%s"}'
+        promql-template: '(request_success_total{model_name="%s"} / request_received_total{model_name="%s"}) * 100'
         display-name: Request Success Rate
         unit: '%'
-        aggregation-type: WEIGHTED_AVG
       - metric-name: total_requests
-        promql-template: 'api_calls_total{pod="%s"}'
+        promql-template: 'request_received_total{model_name="%s"}'
         display-name: Total Requests
         unit: requests
-        aggregation-type: SUM
       - metric-name: failed_requests
-        promql-template: 'api_calls_failed{pod="%s"}'
+        promql-template: 'request_failed_total{model_name="%s"}'
         display-name: Failed Requests
         unit: requests
-        aggregation-type: SUM
       - metric-name: success_requests
-        promql-template: 'api_calls_success{pod="%s"}'
+        promql-template: 'request_success_total{model_name="%s"}'
         display-name: Successful Requests
         unit: requests
-        aggregation-type: SUM
