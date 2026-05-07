@@ -1,0 +1,76 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: model-lite-observability
+  namespace: model-engine
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-lite-observability
+  namespace: model-engine
+  labels:
+    app: model-lite-observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: model-lite-observability
+  template:
+    metadata:
+      labels:
+        app: model-lite-observability
+    spec:
+      serviceAccountName: model-lite-observability
+      containers:
+        - name: model-lite-observability
+          image: model-lite-observability:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: JAVA_OPTS
+              value: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+              value: "file:/config/application.yml"
+            - name: K8S_NAMESPACE
+              value: "model-engine"
+            - name: PROMETHEUS_URL
+              value: "http://prometheus:9090"
+            - name: CLUSTER_ID
+              value: "local-dev"
+            - name: ME_VERSION
+              value: "1.0.0"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /model/observability/v1/health
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /model/observability/v1/health
+              port: 8080
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /model/observability/v1/health
+              port: 8080
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+      volumes:
+        - name: config
+          configMap:
+            name: observability-config

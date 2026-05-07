@@ -50,32 +50,20 @@ public class PrometheusClientImpl implements PrometheusClient {
     @Override
     public PrometheusResponse query(String promQL) {
         log.debug("Executing Prometheus instant query: {}", promQL);
-        URI uri = UriComponentsBuilder
-            .fromHttpUrl(properties.getPrometheus().getUrl())
-            .path("/api/v1/query")
-            .queryParam("query", promQL)
-            .encode()
-            .build()
-            .toUri();
-        return executeWithRetry(uri, "instant query");
+        String url = properties.getPrometheus().getUrl() + "/api/v1/query?query=" + encodePromQL(promQL);
+        return executeWithRetry(URI.create(url), "instant query");
     }
     
     @Override
     public PrometheusResponse queryRange(String promQL, Instant start, Instant end, Duration step, Duration timeout) {
         log.debug("Executing Prometheus range query: {} from {} to {} step {}", 
                   promQL, start, end, step);
-        URI uri = UriComponentsBuilder
-            .fromHttpUrl(properties.getPrometheus().getUrl())
-            .path("/api/v1/query_range")
-            .queryParam("query", promQL)
-            .queryParam("start", start.getEpochSecond())
-            .queryParam("end", end.getEpochSecond())
-            .queryParam("step", step.getSeconds())
-            .queryParam("timeout", timeout.toSeconds() + "s")
-            .encode()
-            .build()
-            .toUri();
-        return executeWithRetry(uri, "range query");
+        String url = String.format(
+            "%s/api/v1/query_range?query=%s&start=%s&end=%s&step=%s&timeout=%ss",
+            properties.getPrometheus().getUrl(), encodePromQL(promQL),
+            start.getEpochSecond(), end.getEpochSecond(),
+            step.getSeconds(), timeout.toSeconds());
+        return executeWithRetry(URI.create(url), "range query");
     }
     
     @Override
@@ -95,6 +83,18 @@ public class PrometheusClientImpl implements PrometheusClient {
             return false;
         }
     }
+    /**
+     * URL-encode PromQL query for safe URI construction.
+     * Uses java.net.URLEncoder to handle { } " = and other special characters.
+     */
+    private String encodePromQL(String promQL) {
+        try {
+            return java.net.URLEncoder.encode(promQL, "UTF-8");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to encode PromQL", e);
+        }
+    }
+
     
     private PrometheusResponse executeWithRetry(URI uri, String operation) {
         int maxRetries = properties.getPrometheus().getMaxRetries();

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-exporter
+  namespace: model-engine
+  labels:
+    app: metrics-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: metrics-exporter
+    spec:
+      containers:
+        - name: metrics-exporter
+          image: metrics-exporter:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9091
+              protocol: TCP
+          env:
+            - name: EXPORTER_PORT
+              value: "9091"
+            - name: POD_NAMES
+              value: "model-inference-7b-001,model-inference-7b-002"
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 9091
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9091
+            initialDelaySeconds: 5
+            periodSeconds: 10

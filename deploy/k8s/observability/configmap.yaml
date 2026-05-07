@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-config
+  namespace: model-engine
+  labels:
+    app: model-lite-observability
+data:
+  application.yml: |
+    observability:
+      prometheus:
+        url: http://prometheus:9090
+        timeout: 30s
+      kubernetes:
+        namespace: model-engine
+      cluster-id: local-dev
+      me-version: 1.0.0

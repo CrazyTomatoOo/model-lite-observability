@@ -15,6 +15,7 @@ import com.modelengine.observability.util.TimeParser;
 import io.fabric8.kubernetes.api.model.Pod;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -35,6 +36,7 @@ public class MetricsService {
     private final PrometheusClient prometheusClient;
     private final TopologyService topologyService;
     private final MetricsAggregator metricsAggregator;
+    @Qualifier("observabilityCacheManager")
     private final CacheManager cacheManager;
     private final ObservabilityProperties properties;
     private final MetricsDefinitionLoader metricsDefinitionLoader;

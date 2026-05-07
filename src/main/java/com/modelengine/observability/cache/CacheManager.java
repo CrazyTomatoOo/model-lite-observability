@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  * Each cache entry can have its own TTL specified at load time.</p>
  */
 @Slf4j
-@Component
+@Component("observabilityCacheManager")
 public class CacheManager {
 
     private final Cache<String, CacheEntry<?>> cache;

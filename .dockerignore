@@ -1,0 +1,10 @@
+.git/
+.gitignore
+.idea/
+.classpath
+.project
+.settings/
+.factorypath
+target/
+deploy/
+*.md
