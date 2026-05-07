@@ -2,7 +2,6 @@ package com.modelengine.observability.controller;
 
 import com.modelengine.observability.dto.HealthStatusDTO;
 import com.modelengine.observability.service.HealthCheckService;
-import com.modelengine.observability.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -23,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(HealthController.class)
 @AutoConfigureMockMvc
-@Import(SecurityConfig.class)
 class HealthControllerTest {
 
     @Autowired
@@ -109,26 +107,6 @@ class HealthControllerTest {
                 .andExpect(jsonPath("$.data.components.kubernetes").isString());
     }
 
-    @Test
-    void healthNoAuthRequired() throws Exception {
-        Map<String, String> components = new LinkedHashMap<>();
-        components.put("prometheus", "connected");
-        components.put("kubernetes", "connected");
-
-        HealthStatusDTO status = HealthStatusDTO.builder()
-                .status("healthy")
-                .version("2.0.0")
-                .timestamp(Instant.now())
-                .clusterId("test-cluster")
-                .meVersion("2.0.0")
-                .components(components)
-                .build();
-
-        when(healthCheckService.checkHealth()).thenReturn(status);
-
-        mockMvc.perform(get("/health"))
-                .andExpect(status().isOk());
-    }
 
     @Test
     void responseContainsAllRequiredFields() throws Exception {

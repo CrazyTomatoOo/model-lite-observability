@@ -4,7 +4,6 @@ import com.modelengine.observability.dto.ModelServiceDTO;
 import com.modelengine.observability.dto.PageDTO;
 import com.modelengine.observability.dto.PaginationRequest;
 import com.modelengine.observability.service.ModelServiceService;
-import com.modelengine.observability.config.SecurityConfig;
 import com.modelengine.observability.service.MetricsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ModelServiceController.class)
-@Import(SecurityConfig.class)
 class ModelServiceControllerTest {
 
     @Autowired
@@ -53,7 +51,6 @@ class ModelServiceControllerTest {
                 eq(null), eq(null), eq(null))).thenReturn(page);
 
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
@@ -74,8 +71,7 @@ class ModelServiceControllerTest {
                 eq(null), eq(null), eq(null)))
                 .thenReturn(PageDTO.of(List.of(), 1, 20, 0));
 
-        mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token"))
+        mockMvc.perform(get("/model-services"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.page").value(1))
                 .andExpect(jsonPath("$.data.size").value(20));
@@ -88,7 +84,6 @@ class ModelServiceControllerTest {
                 .thenReturn(PageDTO.of(List.of(), 1, 20, 0));
 
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .param("namespace", "ns1")
                         .param("framework", "VLLM")
                         .param("status", "Running"))
@@ -102,7 +97,6 @@ class ModelServiceControllerTest {
                 .thenReturn(PageDTO.of(List.of(), 1, 20, 0));
 
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .param("sort", "status,asc"))
                 .andExpect(status().isOk());
     }
@@ -112,7 +106,6 @@ class ModelServiceControllerTest {
     @Test
     void pageZeroRejectedAsBadRequest() throws Exception {
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .param("page", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("error"))
@@ -122,7 +115,6 @@ class ModelServiceControllerTest {
     @Test
     void pageNegativeRejectedAsBadRequest() throws Exception {
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .param("page", "-1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("0108001"));
@@ -131,7 +123,6 @@ class ModelServiceControllerTest {
     @Test
     void sizeZeroRejectedAsBadRequest() throws Exception {
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .param("size", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("0108001"));
@@ -140,7 +131,6 @@ class ModelServiceControllerTest {
     @Test
     void size200RejectedAsBadRequest() throws Exception {
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .param("size", "200"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("0108001"));
@@ -149,7 +139,6 @@ class ModelServiceControllerTest {
     @Test
     void size101RejectedAsBadRequest() throws Exception {
         mockMvc.perform(get("/model-services")
-                        .header("Authorization", "Bearer test-token")
                         .param("size", "101"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("0108001"));

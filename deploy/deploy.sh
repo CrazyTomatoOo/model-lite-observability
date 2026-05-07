@@ -68,6 +68,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ── Step 1: Docker build ─────────────────────────────────────────
 if [ "$SKIP_BUILD" = false ]; then
   echo ">>> Building Docker image: model-lite-observability:latest ..."
+  echo ">>> Building Java application locally (mvn clean package -DskipTests) ..."
+  mvn clean package -DskipTests -q -f "${SCRIPT_DIR}/../pom.xml"
+
   docker build -t model-lite-observability:latest ..
 
   echo ">>> Building Docker image: metrics-exporter:latest ..."
@@ -94,13 +97,19 @@ esac
 echo ""
 # ── Step 3: Apply Kubernetes manifests ───────────────────────────
 
+echo ">>> Applying CRD manifests ..."
+kubectl apply -f "${SCRIPT_DIR}/../k8s/crds/"
+
 echo ">>> Applying namespace manifest ..."
 kubectl apply -f "${SCRIPT_DIR}/../k8s/namespace.yaml"
+echo ">>> Applying RBAC manifests ..."
+kubectl apply -f "${SCRIPT_DIR}/../k8s/observability/rbac.yaml"
+
 echo ">>> Applying exporter manifests ..."
 kubectl apply -f "${SCRIPT_DIR}/../k8s/exporter/"
 
 echo ">>> Applying Prometheus manifests ..."
-
+kubectl apply -f "${SCRIPT_DIR}/../k8s/prometheus/"
 echo ">>> Applying observability manifests ..."
 kubectl apply -f "${SCRIPT_DIR}/../k8s/observability/"
 echo ""
