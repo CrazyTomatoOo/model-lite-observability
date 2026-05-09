@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import com.modelengine.observability.service.inference.InstanceStatus;
 
 /**
  * DTO representing model service information.
@@ -23,7 +24,7 @@ public class ModelServiceDTO {
     private String userResourceGroupName;
     private ModelMetaParams modelMeta;
     private MetricParams metrics;
-    private String status;
+    private InstanceStatus status;
     private Integer currentReplicas;
     private Integer desiredReplicas;
     private String address;

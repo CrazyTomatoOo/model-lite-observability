@@ -6,6 +6,7 @@ import com.modelengine.observability.dto.PaginationRequest;
 import com.modelengine.observability.dto.PodInfoDTO;
 import com.modelengine.observability.service.inference.InferenceInstance;
 import com.modelengine.observability.service.inference.InferenceService;
+import com.modelengine.observability.service.inference.InstanceStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +25,6 @@ class ModelServiceServiceTest {
     @Mock
     private InferenceService inferenceService;
 
-
     private ModelServiceService modelServiceService;
 
     @BeforeEach
@@ -32,7 +32,7 @@ class ModelServiceServiceTest {
         modelServiceService = new ModelServiceService(inferenceService);
     }
 
-    private InferenceInstance createInstance(String name, String namespace, String status,
+    private InferenceInstance createInstance(String name, String namespace, InstanceStatus status,
                                               String framework, int currentReplicas, int desiredReplicas) {
         return InferenceInstance.builder()
                 .instanceName(name)
@@ -59,13 +59,13 @@ class ModelServiceServiceTest {
     @Test
     void responseHasCorrectStructure() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        assertNotNull(result.getData());
+        assertNotNull(result.getRecords());
         assertEquals(1, result.getPage());
         assertEquals(20, result.getSize());
         assertEquals(1L, result.getTotal());
@@ -75,41 +75,73 @@ class ModelServiceServiceTest {
     @Test
     void eachItemHasInstanceName() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 2, 3)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 2, 3)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        assertEquals(1, result.getData().size());
-        assertEquals("svc-a", result.getData().get(0).getInstanceName());
-        assertEquals("Running", result.getData().get(0).getStatus());
-        assertEquals(2, result.getData().get(0).getCurrentReplicas());
-        assertEquals(3, result.getData().get(0).getDesiredReplicas());
+        assertEquals(1, result.getRecords().size());
+        assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
+        assertEquals(InstanceStatus.RUNNING, result.getRecords().get(0).getStatus());
+        assertEquals(2, result.getRecords().get(0).getCurrentReplicas());
+        assertEquals(3, result.getRecords().get(0).getDesiredReplicas());
     }
 
     @Test
+    void metricsFieldIsNotNull() {
+        when(inferenceService.listInstances()).thenReturn(List.of(
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+        ));
+
+        PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
+                defaultRequest(), null, null, null);
+
+        assertNotNull(result.getRecords().get(0).getMetrics());
+        assertEquals(1000, result.getRecords().get(0).getMetrics().getRequests());
+    }
     void metricsFieldIsNull() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        assertNull(result.getData().get(0).getMetrics());
+        assertNull(result.getRecords().get(0).getMetrics());
     }
 
     @Test
-    void nestedCrdsFieldsAreNull() {
+    void nestedCrdsFieldsAreNotNull() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        ModelServiceDTO dto = result.getData().get(0);
+        ModelServiceDTO dto = result.getRecords().get(0);
+        assertNotNull(dto.getModelMeta());
+        assertNotNull(dto.getDeviceParams());
+        assertNotNull(dto.getFrameworkParams());
+        assertNotNull(dto.getEnv());
+        assertNotNull(dto.getStorageParams());
+        assertNotNull(dto.getResourceParams());
+        assertNotNull(dto.getDeployParams());
+        assertNotNull(dto.getScheduleParams());
+        assertNotNull(dto.getAdditionalParams());
+        assertNotNull(dto.getReason());
+        assertNotNull(dto.getDetails());
+    }
+    void nestedCrdsFieldsAreNull() {
+        when(inferenceService.listInstances()).thenReturn(List.of(
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+        ));
+
+        PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
+                defaultRequest(), null, null, null);
+
+        ModelServiceDTO dto = result.getRecords().get(0);
         assertNull(dto.getModelMeta());
         assertNull(dto.getDeviceParams());
         assertNull(dto.getFrameworkParams());
@@ -128,7 +160,7 @@ class ModelServiceServiceTest {
     @Test
     void defaultPaginationParams() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
         ));
 
         PaginationRequest req = PaginationRequest.builder()
@@ -147,9 +179,9 @@ class ModelServiceServiceTest {
     @Test
     void defaultSortIsInstanceNameDesc() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-c", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-b", "ns1", "Running", "VLLM", 1, 1)
+                createInstance("svc-c", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-b", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
         ));
 
         PaginationRequest req = PaginationRequest.builder()
@@ -161,18 +193,18 @@ class ModelServiceServiceTest {
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(req, null, null, null);
 
-        assertEquals(3, result.getData().size());
-        assertEquals("svc-c", result.getData().get(0).getInstanceName());
-        assertEquals("svc-b", result.getData().get(1).getInstanceName());
-        assertEquals("svc-a", result.getData().get(2).getInstanceName());
+        assertEquals(3, result.getRecords().size());
+        assertEquals("svc-c", result.getRecords().get(0).getInstanceName());
+        assertEquals("svc-b", result.getRecords().get(1).getInstanceName());
+        assertEquals("svc-a", result.getRecords().get(2).getInstanceName());
     }
 
     @Test
     void sortAscending() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-c", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-b", "ns1", "Running", "VLLM", 1, 1)
+                createInstance("svc-c", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-b", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
         ));
 
         PaginationRequest req = PaginationRequest.builder()
@@ -184,9 +216,9 @@ class ModelServiceServiceTest {
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(req, null, null, null);
 
-        assertEquals("svc-a", result.getData().get(0).getInstanceName());
-        assertEquals("svc-b", result.getData().get(1).getInstanceName());
-        assertEquals("svc-c", result.getData().get(2).getInstanceName());
+        assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
+        assertEquals("svc-b", result.getRecords().get(1).getInstanceName());
+        assertEquals("svc-c", result.getRecords().get(2).getInstanceName());
     }
 
     // ───────── Filtering ─────────
@@ -194,70 +226,70 @@ class ModelServiceServiceTest {
     @Test
     void filterByNamespace() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-b", "ns2", "Running", "VLLM", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-b", "ns2", InstanceStatus.RUNNING, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), "ns1", null, null);
 
-        assertEquals(1, result.getData().size());
-        assertEquals("svc-a", result.getData().get(0).getInstanceName());
+        assertEquals(1, result.getRecords().size());
+        assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
     }
 
     @Test
     void filterByFramework() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-b", "ns2", "Running", "SGLang", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-b", "ns2", InstanceStatus.RUNNING, "OtherFramework", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
-                defaultRequest(), null, "VLLM", null);
+                defaultRequest(), null, "MindIE", null);
 
-        assertEquals(1, result.getData().size());
-        assertEquals("svc-a", result.getData().get(0).getInstanceName());
+        assertEquals(1, result.getRecords().size());
+        assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
     }
 
     @Test
     void filterByStatus() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-b", "ns2", "Pending", "VLLM", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-b", "ns2", InstanceStatus.PENDING, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, "Running");
 
-        assertEquals(1, result.getData().size());
-        assertEquals("svc-a", result.getData().get(0).getInstanceName());
+        assertEquals(1, result.getRecords().size());
+        assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
     }
 
     @Test
     void filterByNamespaceAndStatus() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1),
-                createInstance("svc-b", "ns1", "Pending", "VLLM", 1, 1),
-                createInstance("svc-c", "ns2", "Running", "VLLM", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
+                createInstance("svc-b", "ns1", InstanceStatus.PENDING, "MindIE", 1, 1),
+                createInstance("svc-c", "ns2", InstanceStatus.RUNNING, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), "ns1", null, "Running");
 
-        assertEquals(1, result.getData().size());
-        assertEquals("svc-a", result.getData().get(0).getInstanceName());
+        assertEquals(1, result.getRecords().size());
+        assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
     }
 
     @Test
     void emptyFilterReturnsAll() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), "", "", "");
 
-        assertEquals(1, result.getData().size());
+        assertEquals(1, result.getRecords().size());
     }
 
     // ───────── Empty result ─────────
@@ -269,7 +301,7 @@ class ModelServiceServiceTest {
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        assertTrue(result.getData().isEmpty());
+        assertTrue(result.getRecords().isEmpty());
         assertEquals(0L, result.getTotal());
         assertEquals(0, result.getPages());
     }
@@ -279,13 +311,13 @@ class ModelServiceServiceTest {
     @Test
     void podsGeneratedFromReplicas() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        List<PodInfoDTO> pods = result.getData().get(0).getPods();
+        List<PodInfoDTO> pods = result.getRecords().get(0).getPods();
         assertNotNull(pods);
         assertEquals(3, pods.size());
         assertEquals("svc-a-0", pods.get(0).getName());
@@ -301,13 +333,13 @@ class ModelServiceServiceTest {
     @Test
     void podsCountMatchesReplicas() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 25, 25)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 25, 25)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        assertEquals(25, result.getData().get(0).getPods().size());
+        assertEquals(25, result.getRecords().get(0).getPods().size());
     }
 
     @Test
@@ -315,8 +347,8 @@ class ModelServiceServiceTest {
         InferenceInstance instance = InferenceInstance.builder()
                 .instanceName("svc-a")
                 .namespace("ns1")
-                .status("Running")
-                .framework("VLLM")
+                .status(InstanceStatus.RUNNING)
+                .framework("MindIE")
                 .currentReplicas(1)
                 .desiredReplicas(1)
                 .build(); // no selector
@@ -326,7 +358,7 @@ class ModelServiceServiceTest {
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
                 defaultRequest(), null, null, null);
 
-        assertEquals(1, result.getData().get(0).getPods().size());
+        assertEquals(1, result.getRecords().get(0).getPods().size());
     }
 
     // ───────── Pagination edge cases ─────────
@@ -335,7 +367,7 @@ class ModelServiceServiceTest {
     void paginationSecondPage() {
         java.util.List<InferenceInstance> instances = new java.util.ArrayList<>();
         for (int i = 0; i < 25; i++) {
-            instances.add(createInstance("svc-" + i, "ns1", "Running", "VLLM", 1, 1));
+            instances.add(createInstance("svc-" + i, "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1));
         }
         when(inferenceService.listInstances()).thenReturn(instances);
 
@@ -350,14 +382,14 @@ class ModelServiceServiceTest {
 
         assertEquals(25L, result.getTotal());
         assertEquals(2, result.getPages());
-        assertEquals(5, result.getData().size());
+        assertEquals(5, result.getRecords().size());
         assertEquals(2, result.getPage());
     }
 
     @Test
     void pageBeyondTotalReturnsEmpty() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", "Running", "VLLM", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
         ));
 
         PaginationRequest req = PaginationRequest.builder()
@@ -369,11 +401,8 @@ class ModelServiceServiceTest {
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(req, null, null, null);
 
-        assertTrue(result.getData().isEmpty());
+        assertTrue(result.getRecords().isEmpty());
         assertEquals(1L, result.getTotal());
         assertEquals(1, result.getPages());
     }
-
-    // ───────── Helper ─────────
-
 }

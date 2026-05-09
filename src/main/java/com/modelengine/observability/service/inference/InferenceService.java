@@ -32,7 +32,7 @@ public interface InferenceService {
     /**
      * List inference instances filtered by framework.
      *
-     * @param framework the framework to filter by (MindIE, VLLM, SGLang)
+     * @param framework the framework to filter by (MindIE)
      * @return list of matching InferenceInstance, never null
      */
     List<InferenceInstance> listByFramework(String framework);

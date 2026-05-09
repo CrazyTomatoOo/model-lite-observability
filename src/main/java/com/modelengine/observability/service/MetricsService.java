@@ -12,7 +12,6 @@ import com.modelengine.observability.dto.MetricsRangeQueryDTO;
 import com.modelengine.observability.dto.MetricsRangeResponseDTO;
 import com.modelengine.observability.util.StepParser;
 import com.modelengine.observability.util.TimeParser;
-import io.fabric8.kubernetes.api.model.Pod;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,8 +33,6 @@ import java.util.List;
 public class MetricsService {
 
     private final PrometheusClient prometheusClient;
-    private final TopologyService topologyService;
-    private final MetricsAggregator metricsAggregator;
     @Qualifier("observabilityCacheManager")
     private final CacheManager cacheManager;
     private final ObservabilityProperties properties;
@@ -43,17 +40,6 @@ public class MetricsService {
 
     private static final String CACHE_KEY_METRICS_PREFIX = "metrics:";
     private static final String CACHE_KEY_METRICS_RANGE_PREFIX = "metrics:range:";
-
-    public List<MetricSeriesDTO> getServiceMetrics(String instanceName) {
-        log.debug("Getting real-time metrics for service: {}", instanceName);
-
-        String cacheKey = CACHE_KEY_METRICS_PREFIX + instanceName;
-        return cacheManager.getOrLoad(
-                cacheKey,
-                () -> loadServiceMetrics(instanceName),
-                properties.getCache().getMetricsTtl()
-        );
-    }
 
     public MetricsRangeResponseDTO getServiceMetricsRange(String instanceName, MetricsRangeQueryDTO query) {
         log.debug("Getting range metrics for service: {}, query: {}", instanceName, query);
@@ -64,20 +50,6 @@ public class MetricsService {
                 () -> loadServiceMetricsRange(instanceName, query),
                 properties.getCache().getMetricsTtl()
         );
-    }
-
-    private List<MetricSeriesDTO> loadServiceMetrics(String instanceName) {
-        List<MetricsDefinitionLoader.MetricDefinition> definitions = metricsDefinitionLoader.getDefinitions();
-        if (definitions.isEmpty()) return List.of();
-
-        List<MetricSeriesDTO> serviceMetrics = new ArrayList<>();
-        for (MetricsDefinitionLoader.MetricDefinition def : definitions) {
-            String promQL = def.promqlTemplate().replace("%s", instanceName);
-            MetricSeriesDTO series = queryInstantMetric(promQL, def);
-            if (series != null) serviceMetrics.add(series);
-        }
-        log.debug("Loaded {} metrics for {}", serviceMetrics.size(), instanceName);
-        return serviceMetrics;
     }
 
     private MetricsRangeResponseDTO loadServiceMetricsRange(String instanceName, MetricsRangeQueryDTO query) {
@@ -133,26 +105,6 @@ public class MetricsService {
                 .toList();
     }
 
-    private MetricSeriesDTO queryInstantMetric(String promQL, MetricsDefinitionLoader.MetricDefinition definition) {
-        try {
-            PrometheusResponse response = prometheusClient.query(promQL);
-            if (!response.isSuccess() || !response.hasData()) return null;
-            List<DataPointDTO> dataPoints = new ArrayList<>();
-            for (PrometheusResult result : response.getData().getResult()) {
-                Double value = extractValue(result.getValue());
-                if (value != null) dataPoints.add(DataPointDTO.builder().timestamp(Instant.now()).value(value).build());
-            }
-            if (dataPoints.isEmpty()) return null;
-            return MetricSeriesDTO.builder()
-                    .metricName(definition.metricName()).displayName(definition.displayName())
-                    .unit(definition.unit())
-                    .dataPoints(dataPoints).build();
-        } catch (Exception e) {
-            log.warn("Failed to query metric {}: {}", definition.metricName(), e.getMessage());
-            return null;
-        }
-    }
-
     private MetricSeriesDTO queryRangeMetric(String promQL, MetricsDefinitionLoader.MetricDefinition definition,
                                               Instant start, Instant end, Duration step, Duration timeout) {
         try {
@@ -167,6 +119,7 @@ public class MetricsService {
             return MetricSeriesDTO.builder()
                     .metricName(definition.metricName()).displayName(definition.displayName())
                     .unit(definition.unit())
+                    .aggregation(definition.aggregationType().name().toLowerCase())
                     .dataPoints(dataPoints).build();
         } catch (Exception e) {
             log.warn("Failed to query range metric {}: {}", definition.metricName(), e.getMessage());
@@ -174,17 +127,6 @@ public class MetricsService {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private Double extractValue(Object valueObj) {
-        if (valueObj instanceof com.fasterxml.jackson.databind.node.ArrayNode arr && arr.size() >= 2) {
-            try { return arr.get(1).asDouble(); } catch (Exception ignored) {}
-        }
-        if (valueObj instanceof List<?> valueList && valueList.size() >= 2) {
-            try { return Double.parseDouble(valueList.get(1).toString()); }
-            catch (NumberFormatException e) { log.debug("Failed to parse value: {}", valueList.get(1)); }
-        }
-        return null;
-    }
 
     @SuppressWarnings("unchecked")
     private List<DataPointDTO> extractValues(Object valuesObj) {

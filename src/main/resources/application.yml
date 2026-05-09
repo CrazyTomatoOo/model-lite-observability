@@ -10,6 +10,13 @@ server:
   servlet:
     context-path: /model/observability/v1
 
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
 management:
   endpoints:
     web:
@@ -19,13 +26,6 @@ management:
     health:
       show-details: always
 
-  prometheus:
-    url: ${PROMETHEUS_URL:http://localhost:9090}
-    timeout: 30s
-    max-retries: 3
-  kubernetes:
-    namespace: ${K8S_NAMESPACE:default}
-    config-path: ${KUBECONFIG:}
   cache:
     metrics-ttl: 5m
     services-ttl: 5m

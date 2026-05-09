@@ -157,7 +157,7 @@ class PaginationUtilsTest {
     void paginateEmptyList() {
         PaginationRequest req = PaginationRequest.builder().page(1).size(20).build();
         PageDTO<String> result = PaginationUtils.paginate(List.of(), req);
-        assertTrue(result.getData().isEmpty());
+        assertTrue(result.getRecords().isEmpty());
         assertEquals(0, result.getTotal());
         assertEquals(0, result.getPages());
         assertEquals(1, result.getPage());
@@ -168,7 +168,7 @@ class PaginationUtilsTest {
     void paginateNullList() {
         PaginationRequest req = PaginationRequest.builder().page(1).size(20).build();
         PageDTO<String> result = PaginationUtils.paginate(null, req);
-        assertTrue(result.getData().isEmpty());
+        assertTrue(result.getRecords().isEmpty());
         assertEquals(0, result.getTotal());
     }
 
@@ -176,8 +176,8 @@ class PaginationUtilsTest {
     void paginateSingleRecord() {
         PaginationRequest req = PaginationRequest.builder().page(1).size(20).build();
         PageDTO<String> result = PaginationUtils.paginate(List.of("only"), req);
-        assertEquals(1, result.getData().size());
-        assertEquals("only", result.getData().getFirst());
+        assertEquals(1, result.getRecords().size());
+        assertEquals("only", result.getRecords().getFirst());
         assertEquals(1, result.getTotal());
         assertEquals(1, result.getPages());
     }
@@ -189,9 +189,9 @@ class PaginationUtilsTest {
                 .boxed().toList();
         PaginationRequest req = PaginationRequest.builder().page(3).size(20).build();
         PageDTO<Integer> result = PaginationUtils.paginate(items, req);
-        assertEquals(15, result.getData().size());
-        assertEquals(41, result.getData().getFirst()); // items 41-55
-        assertEquals(55, result.getData().getLast());
+        assertEquals(15, result.getRecords().size());
+        assertEquals(41, result.getRecords().getFirst()); // items 41-55
+        assertEquals(55, result.getRecords().getLast());
         assertEquals(55, result.getTotal());
         assertEquals(3, result.getPages()); // ceil(55/20) = 3
     }
@@ -202,9 +202,9 @@ class PaginationUtilsTest {
                 .boxed().toList();
         PaginationRequest req = PaginationRequest.builder().page(1).size(20).build();
         PageDTO<Integer> result = PaginationUtils.paginate(items, req);
-        assertEquals(20, result.getData().size());
-        assertEquals(1, result.getData().getFirst());
-        assertEquals(20, result.getData().getLast());
+        assertEquals(20, result.getRecords().size());
+        assertEquals(1, result.getRecords().getFirst());
+        assertEquals(20, result.getRecords().getLast());
     }
 
     @Test
@@ -213,7 +213,7 @@ class PaginationUtilsTest {
                 .boxed().toList();
         PaginationRequest req = PaginationRequest.builder().page(5).size(20).build();
         PageDTO<Integer> result = PaginationUtils.paginate(items, req);
-        assertTrue(result.getData().isEmpty());
+        assertTrue(result.getRecords().isEmpty());
         assertEquals(10, result.getTotal());
         assertEquals(5, result.getPage());
     }
@@ -225,7 +225,7 @@ class PaginationUtilsTest {
         List<String> items = List.of("zebra", "apple", "monkey", "banana");
         PaginationRequest req = PaginationRequest.builder().page(1).size(10).build();
         PageDTO<String> result = PaginationUtils.paginate(items, req, Comparator.naturalOrder());
-        assertEquals(List.of("apple", "banana", "monkey", "zebra"), result.getData());
+        assertEquals(List.of("apple", "banana", "monkey", "zebra"), result.getRecords());
     }
 
     @Test
@@ -236,7 +236,7 @@ class PaginationUtilsTest {
         // Reverse order: 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
         // Page 2 (size 3): indices 3..5 → 7, 6, 5
         PageDTO<Integer> result = PaginationUtils.paginate(items, req, Comparator.reverseOrder());
-        assertEquals(List.of(7, 6, 5), result.getData());
+        assertEquals(List.of(7, 6, 5), result.getRecords());
     }
 
     @Test
@@ -244,6 +244,6 @@ class PaginationUtilsTest {
         List<String> items = List.of("c", "a", "b");
         PaginationRequest req = PaginationRequest.builder().page(1).size(10).build();
         PageDTO<String> result = PaginationUtils.paginate(items, req);
-        assertEquals(List.of("c", "a", "b"), result.getData());
+        assertEquals(List.of("c", "a", "b"), result.getRecords());
     }
 }

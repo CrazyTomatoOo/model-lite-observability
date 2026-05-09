@@ -5,6 +5,7 @@ import com.modelengine.observability.dto.PageDTO;
 import com.modelengine.observability.dto.PaginationRequest;
 import com.modelengine.observability.service.ModelServiceService;
 import com.modelengine.observability.service.MetricsService;
+import com.modelengine.observability.service.inference.InstanceStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -40,7 +41,7 @@ class ModelServiceControllerTest {
     void validRequestReturns200WithCorrectStructure() throws Exception {
         ModelServiceDTO dto = ModelServiceDTO.builder()
                 .instanceName("svc-a")
-                .status("Running")
+                .status(InstanceStatus.RUNNING)
                 .currentReplicas(2)
                 .desiredReplicas(3)
                 .build();
@@ -58,11 +59,11 @@ class ModelServiceControllerTest {
                 .andExpect(jsonPath("$.data.size").value(20))
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.pages").value(1))
-                .andExpect(jsonPath("$.data.data[0].instanceName").value("svc-a"))
-                .andExpect(jsonPath("$.data.data[0].status").value("Running"))
-                .andExpect(jsonPath("$.data.data[0].currentReplicas").value(2))
-                .andExpect(jsonPath("$.data.data[0].desiredReplicas").value(3))
-                .andExpect(jsonPath("$.data.data[0].metrics").doesNotExist());
+                .andExpect(jsonPath("$.data.records[0].instanceName").value("svc-a"))
+                .andExpect(jsonPath("$.data.records[0].status").value("Running"))
+                .andExpect(jsonPath("$.data.records[0].currentReplicas").value(2))
+                .andExpect(jsonPath("$.data.records[0].desiredReplicas").value(3))
+                .andExpect(jsonPath("$.data.records[0].metrics").doesNotExist());
     }
 
     @Test
@@ -80,12 +81,12 @@ class ModelServiceControllerTest {
     @Test
     void filterParamsPassedToService() throws Exception {
         when(modelServiceService.listServices(any(PaginationRequest.class),
-                eq("ns1"), eq("VLLM"), eq("Running")))
+                eq("ns1"), eq("MindIE"), eq("Running")))
                 .thenReturn(PageDTO.of(List.of(), 1, 20, 0));
 
         mockMvc.perform(get("/model-services")
                         .param("namespace", "ns1")
-                        .param("framework", "VLLM")
+                        .param("framework", "MindIE")
                         .param("status", "Running"))
                 .andExpect(status().isOk());
     }

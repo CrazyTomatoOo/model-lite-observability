@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import com.modelengine.observability.service.inference.InstanceStatus;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -190,8 +191,8 @@ class DtoSerializationTest {
         @DisplayName("should round-trip correctly")
         void roundTrip() throws Exception {
             FrameworkParams original = FrameworkParams.builder()
-                    .name("vllm").version("0.3.0")
-                    .imageName("vllm/vllm:latest")
+                    .name("mindie-910b").version("1.0.0")
+                    .imageName("registry/example/mindie:latest")
                     .frameworkParam(Map.of("tensor-parallel-size", "2"))
                     .build();
             String json = objectMapper.writeValueAsString(original);
@@ -454,7 +455,7 @@ class DtoSerializationTest {
                     .userResourceGroupName("默认资源组")
                     .modelMeta(ModelMetaParams.builder().modelName("llama2-7b").build())
                     .metrics(MetricParams.builder().requests(1000).build())
-                    .status("Running")
+                    .status(InstanceStatus.RUNNING)
                     .currentReplicas(3)
                     .desiredReplicas(3)
                     .address("http://llama2-7b-chat.default.svc.cluster.local:8080")
@@ -499,7 +500,7 @@ class DtoSerializationTest {
         void nullNestedObjects() throws Exception {
             ModelServiceDTO dto = ModelServiceDTO.builder()
                     .instanceName("test")
-                    .status("Unknown")
+                    .status(InstanceStatus.UNKNOWN)
                     .currentReplicas(0)
                     .desiredReplicas(0)
                     .build();
@@ -532,7 +533,7 @@ class DtoSerializationTest {
                 """;
             ModelServiceDTO dto = objectMapper.readValue(json, ModelServiceDTO.class);
             assertEquals("llama2-7b-chat", dto.getInstanceName());
-            assertEquals("Running", dto.getStatus());
+            assertEquals(InstanceStatus.RUNNING, dto.getStatus());
             assertEquals(3, dto.getCurrentReplicas());
             assertNotNull(dto.getModelMeta());
             assertEquals("llama2-7b", dto.getModelMeta().getModelName());
@@ -546,7 +547,7 @@ class DtoSerializationTest {
         void roundTrip() throws Exception {
             ModelServiceDTO original = ModelServiceDTO.builder()
                     .instanceName("test-service")
-                    .status("Running")
+                    .status(InstanceStatus.RUNNING)
                     .currentReplicas(2)
                     .desiredReplicas(2)
                     .address("http://test:8080")

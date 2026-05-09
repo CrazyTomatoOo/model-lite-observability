@@ -20,7 +20,6 @@
 
     <properties>
         <java.version>21</java.version>
-        <fabric8.version>7.3.0</fabric8.version>
         <caffeine.version>3.1.8</caffeine.version>
     </properties>
 
@@ -31,6 +30,11 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.8.6</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
@@ -39,17 +43,6 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Kubernetes Client -->
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-client</artifactId>
-            <version>${fabric8.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-model-apiextensions</artifactId>
-            <version>${fabric8.version}</version>
-        </dependency>
 
         <!-- Caching -->
         <dependency>
@@ -76,10 +69,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-server-mock</artifactId>
-            <version>${fabric8.version}</version>
-            <scope>test</scope>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>2.2.29</version>
         </dependency>
     </dependencies>
 

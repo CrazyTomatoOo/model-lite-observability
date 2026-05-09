@@ -19,7 +19,7 @@ public class InferenceInstance {
     /** Maps from ModelInference.serviceId */
     private String instanceName;
     private String namespace;
-    private String status;
+    private InstanceStatus status;
     private Integer currentReplicas;
     private Integer desiredReplicas;
     private Map<String, String> selector;

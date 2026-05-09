@@ -7,7 +7,7 @@ import com.modelengine.observability.client.dto.PrometheusResponse;
 import com.modelengine.observability.client.dto.PrometheusResult;
 import com.modelengine.observability.config.MetricsDefinitionLoader;
 import com.modelengine.observability.config.ObservabilityProperties;
-import com.modelengine.observability.service.MetricsAggregator.AggregationType;
+import com.modelengine.observability.service.AggregationType;
 import com.modelengine.observability.dto.DataPointDTO;
 import com.modelengine.observability.dto.MetricSeriesDTO;
 import com.modelengine.observability.dto.MetricsRangeQueryDTO;
@@ -33,12 +33,6 @@ class MetricsServiceTest {
     private PrometheusClient prometheusClient;
 
     @Mock
-    private TopologyService topologyService;
-
-    @Mock
-    private MetricsAggregator metricsAggregator;
-
-    @Mock
     private CacheManager cacheManager;
 
     @Mock
@@ -58,10 +52,8 @@ class MetricsServiceTest {
         lenient().when(properties.getCache()).thenReturn(new ObservabilityProperties.Cache());
 
         metricsService = new MetricsService(
-                prometheusClient, topologyService, metricsAggregator,
-                cacheManager, properties, metricsDefinitionLoader);
+                prometheusClient, cacheManager, properties, metricsDefinitionLoader);
     }
-
     // ─── Helpers ───
 
 

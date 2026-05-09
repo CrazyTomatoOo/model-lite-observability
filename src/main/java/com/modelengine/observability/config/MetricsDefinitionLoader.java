@@ -1,6 +1,6 @@
 package com.modelengine.observability.config;
 
-import com.modelengine.observability.service.MetricsAggregator.AggregationType;
+import com.modelengine.observability.service.AggregationType;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
