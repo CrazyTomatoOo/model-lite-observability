@@ -6,9 +6,17 @@ spring:
     banner-mode: 'off'
 
 server:
-  port: 8080
+  port: 8443
   servlet:
     context-path: /model/observability/v1
+  ssl:
+    enabled: true
+    key-store: classpath:keystore.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+    key-alias: model-lite-observability
+    protocol: TLS
+    enabled-protocols: TLSv1.2,TLSv1.3
 
 springdoc:
   api-docs:
