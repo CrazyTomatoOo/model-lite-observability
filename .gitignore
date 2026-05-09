@@ -4,3 +4,8 @@ target/
 jre-local/
 __pycache__/
 .gitnexus
+# Development tools
+.claude/
+.sisyphus/
+AGENTS.md
+CLAUDE.md
