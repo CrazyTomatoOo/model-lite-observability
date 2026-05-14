@@ -18,6 +18,7 @@ import com.modelengine.observability.dto.PodInfoDTO;
 import com.modelengine.observability.service.inference.InferenceInstance;
 import com.modelengine.observability.service.inference.InferenceService;
 import com.modelengine.observability.service.inference.InstanceStatus;
+import com.modelengine.observability.service.inference.PodStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -68,7 +69,7 @@ public class ModelServiceService {
                         .name(name + "-" + i)
                         .nodeName("node-" + (i + 1))
                         .ip("10.1.0." + (10 + i))
-                        .status("Running")
+                        .status(PodStatus.HEALTHY)
                         .ready(true)
                         .restartCount(0)
                         .metricsEndpoint("http://" + name + "-" + i + ":9091/metrics")
@@ -152,7 +153,7 @@ public class ModelServiceService {
                 .additionalParams(Map.of("model_format", "safetensors",
                         "quantization", "fp16",
                         "max_context_length", "8192"))
-                .reason(instance.getStatus() == InstanceStatus.RUNNING ? "" : "Instance is in " + instance.getStatus().getDisplayName() + " state")
+                .reason(instance.getStatus() == InstanceStatus.AVAILABLE ? "" : "Instance is in " + instance.getStatus().getDisplayName() + " state")
                 .details(details)
                 .pods(pods);
 

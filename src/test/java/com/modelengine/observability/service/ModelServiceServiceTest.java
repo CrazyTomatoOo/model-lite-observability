@@ -7,6 +7,7 @@ import com.modelengine.observability.dto.PodInfoDTO;
 import com.modelengine.observability.service.inference.InferenceInstance;
 import com.modelengine.observability.service.inference.InferenceService;
 import com.modelengine.observability.service.inference.InstanceStatus;
+import com.modelengine.observability.service.inference.PodStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +60,7 @@ class ModelServiceServiceTest {
     @Test
     void responseHasCorrectStructure() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -75,7 +76,7 @@ class ModelServiceServiceTest {
     @Test
     void eachItemHasInstanceName() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 2, 3)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 2, 3)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -83,7 +84,7 @@ class ModelServiceServiceTest {
 
         assertEquals(1, result.getRecords().size());
         assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
-        assertEquals(InstanceStatus.RUNNING, result.getRecords().get(0).getStatus());
+        assertEquals(InstanceStatus.AVAILABLE, result.getRecords().get(0).getStatus());
         assertEquals(2, result.getRecords().get(0).getCurrentReplicas());
         assertEquals(3, result.getRecords().get(0).getDesiredReplicas());
     }
@@ -91,7 +92,7 @@ class ModelServiceServiceTest {
     @Test
     void metricsFieldIsNotNull() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -102,7 +103,7 @@ class ModelServiceServiceTest {
     }
     void metricsFieldIsNull() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -114,7 +115,7 @@ class ModelServiceServiceTest {
     @Test
     void nestedCrdsFieldsAreNotNull() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -135,7 +136,7 @@ class ModelServiceServiceTest {
     }
     void nestedCrdsFieldsAreNull() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -160,7 +161,7 @@ class ModelServiceServiceTest {
     @Test
     void defaultPaginationParams() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 3, 2)
         ));
 
         PaginationRequest req = PaginationRequest.builder()
@@ -179,9 +180,9 @@ class ModelServiceServiceTest {
     @Test
     void defaultSortIsInstanceNameDesc() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-c", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-b", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
+                createInstance("svc-c", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-b", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1)
         ));
 
         PaginationRequest req = PaginationRequest.builder()
@@ -202,9 +203,9 @@ class ModelServiceServiceTest {
     @Test
     void sortAscending() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-c", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-b", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
+                createInstance("svc-c", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-b", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1)
         ));
 
         PaginationRequest req = PaginationRequest.builder()
@@ -226,8 +227,8 @@ class ModelServiceServiceTest {
     @Test
     void filterByNamespace() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-b", "ns2", InstanceStatus.RUNNING, "MindIE", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-b", "ns2", InstanceStatus.AVAILABLE, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -240,8 +241,8 @@ class ModelServiceServiceTest {
     @Test
     void filterByFramework() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-b", "ns2", InstanceStatus.RUNNING, "OtherFramework", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-b", "ns2", InstanceStatus.AVAILABLE, "OtherFramework", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -254,12 +255,12 @@ class ModelServiceServiceTest {
     @Test
     void filterByStatus() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-b", "ns2", InstanceStatus.PENDING, "MindIE", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-b", "ns2", InstanceStatus.WAITING, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
-                defaultRequest(), null, null, "Running");
+                defaultRequest(), null, null, "Available");
 
         assertEquals(1, result.getRecords().size());
         assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
@@ -268,13 +269,13 @@ class ModelServiceServiceTest {
     @Test
     void filterByNamespaceAndStatus() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1),
-                createInstance("svc-b", "ns1", InstanceStatus.PENDING, "MindIE", 1, 1),
-                createInstance("svc-c", "ns2", InstanceStatus.RUNNING, "MindIE", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1),
+                createInstance("svc-b", "ns1", InstanceStatus.WAITING, "MindIE", 1, 1),
+                createInstance("svc-c", "ns2", InstanceStatus.AVAILABLE, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
-                defaultRequest(), "ns1", null, "Running");
+                defaultRequest(), "ns1", null, "Available");
 
         assertEquals(1, result.getRecords().size());
         assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
@@ -283,7 +284,7 @@ class ModelServiceServiceTest {
     @Test
     void emptyFilterReturnsAll() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -311,7 +312,7 @@ class ModelServiceServiceTest {
     @Test
     void podsGeneratedFromReplicas() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 3, 2)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 3, 2)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -323,7 +324,7 @@ class ModelServiceServiceTest {
         assertEquals("svc-a-0", pods.get(0).getName());
         assertEquals("node-1", pods.get(0).getNodeName());
         assertEquals("10.1.0.10", pods.get(0).getIp());
-        assertEquals("Running", pods.get(0).getStatus());
+        assertEquals(PodStatus.HEALTHY, pods.get(0).getStatus());
         assertTrue(pods.get(0).getReady());
         assertEquals(0, pods.get(0).getRestartCount());
         assertEquals("svc-a-1", pods.get(1).getName());
@@ -333,7 +334,7 @@ class ModelServiceServiceTest {
     @Test
     void podsCountMatchesReplicas() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 25, 25)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 25, 25)
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
@@ -347,7 +348,7 @@ class ModelServiceServiceTest {
         InferenceInstance instance = InferenceInstance.builder()
                 .instanceName("svc-a")
                 .namespace("ns1")
-                .status(InstanceStatus.RUNNING)
+                .status(InstanceStatus.AVAILABLE)
                 .framework("MindIE")
                 .currentReplicas(1)
                 .desiredReplicas(1)
@@ -367,7 +368,7 @@ class ModelServiceServiceTest {
     void paginationSecondPage() {
         java.util.List<InferenceInstance> instances = new java.util.ArrayList<>();
         for (int i = 0; i < 25; i++) {
-            instances.add(createInstance("svc-" + i, "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1));
+            instances.add(createInstance("svc-" + i, "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1));
         }
         when(inferenceService.listInstances()).thenReturn(instances);
 
@@ -389,7 +390,7 @@ class ModelServiceServiceTest {
     @Test
     void pageBeyondTotalReturnsEmpty() {
         when(inferenceService.listInstances()).thenReturn(List.of(
-                createInstance("svc-a", "ns1", InstanceStatus.RUNNING, "MindIE", 1, 1)
+                createInstance("svc-a", "ns1", InstanceStatus.AVAILABLE, "MindIE", 1, 1)
         ));
 
         PaginationRequest req = PaginationRequest.builder()

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import com.modelengine.observability.service.inference.InstanceStatus;
+import com.modelengine.observability.service.inference.PodStatus;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -412,7 +413,7 @@ class DtoSerializationTest {
                     .name("llama2-7b-chat-7d9f4b8c5-x2v9m")
                     .nodeName("ascend-node-01")
                     .ip("10.0.1.15")
-                    .status("Running")
+                    .status(PodStatus.HEALTHY)
                     .ready(true)
                     .restartCount(0)
                     .metricsEndpoint("10.0.1.15:8080")
@@ -433,7 +434,7 @@ class DtoSerializationTest {
         void roundTrip() throws Exception {
             PodInfoDTO original = PodInfoDTO.builder()
                     .name("pod-1").nodeName("node-1").ip("10.0.0.1")
-                    .status("Running").ready(true).restartCount(0)
+                    .status(PodStatus.HEALTHY).ready(true).restartCount(0)
                     .metricsEndpoint("10.0.0.1:8080").build();
             String json = objectMapper.writeValueAsString(original);
             PodInfoDTO deserialized = objectMapper.readValue(json, PodInfoDTO.class);
@@ -455,7 +456,7 @@ class DtoSerializationTest {
                     .userResourceGroupName("默认资源组")
                     .modelMeta(ModelMetaParams.builder().modelName("llama2-7b").build())
                     .metrics(MetricParams.builder().requests(1000).build())
-                    .status(InstanceStatus.RUNNING)
+                    .status(InstanceStatus.AVAILABLE)
                     .currentReplicas(3)
                     .desiredReplicas(3)
                     .address("http://llama2-7b-chat.default.svc.cluster.local:8080")
@@ -500,7 +501,7 @@ class DtoSerializationTest {
         void nullNestedObjects() throws Exception {
             ModelServiceDTO dto = ModelServiceDTO.builder()
                     .instanceName("test")
-                    .status(InstanceStatus.UNKNOWN)
+                    .status(InstanceStatus.UNAVAILABLE)
                     .currentReplicas(0)
                     .desiredReplicas(0)
                     .build();
@@ -523,7 +524,7 @@ class DtoSerializationTest {
             String json = """
                 {
                     "instanceName": "llama2-7b-chat",
-                    "status": "Running",
+                    "status": "Available",
                     "currentReplicas": 3,
                     "desiredReplicas": 3,
                     "address": "http://example.com:8080",
@@ -533,7 +534,7 @@ class DtoSerializationTest {
                 """;
             ModelServiceDTO dto = objectMapper.readValue(json, ModelServiceDTO.class);
             assertEquals("llama2-7b-chat", dto.getInstanceName());
-            assertEquals(InstanceStatus.RUNNING, dto.getStatus());
+            assertEquals(InstanceStatus.AVAILABLE, dto.getStatus());
             assertEquals(3, dto.getCurrentReplicas());
             assertNotNull(dto.getModelMeta());
             assertEquals("llama2-7b", dto.getModelMeta().getModelName());
@@ -547,12 +548,12 @@ class DtoSerializationTest {
         void roundTrip() throws Exception {
             ModelServiceDTO original = ModelServiceDTO.builder()
                     .instanceName("test-service")
-                    .status(InstanceStatus.RUNNING)
+                    .status(InstanceStatus.AVAILABLE)
                     .currentReplicas(2)
                     .desiredReplicas(2)
                     .address("http://test:8080")
                     .env(Map.of("KEY", "VAL"))
-                    .pods(List.of(PodInfoDTO.builder().name("p1").status("Running").ready(true).build()))
+                    .pods(List.of(PodInfoDTO.builder().name("p1").status(PodStatus.HEALTHY).ready(true).build()))
                     .build();
             String json = objectMapper.writeValueAsString(original);
             ModelServiceDTO deserialized = objectMapper.readValue(json, ModelServiceDTO.class);

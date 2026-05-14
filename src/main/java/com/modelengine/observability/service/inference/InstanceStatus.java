@@ -4,15 +4,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Enumeration of possible instance statuses.
+ * Enumeration of inference service statuses.
+ * Covers the full lifecycle: starting → available → stopping → stopped, etc.
  */
 public enum InstanceStatus {
-    PENDING("Pending"),
-    RUNNING("Running"),
-    FAILED("Failed"),
-    UNKNOWN("Unknown"),
-    SUCCEEDED("Succeeded"),
-    TERMINATING("Terminating");
+    PARTIAL_RUNNING("PartialRunning"),
+    WAITING("Waiting"),
+    AVAILABLE("Available"),
+    UNAVAILABLE("Unavailable"),
+    STOPPED("Stopped"),
+    STOPPING("Stopping"),
+    DELETING("Deleting"),
+    STARTING("Starting");
 
     private final String displayName;
 
@@ -30,18 +33,18 @@ public enum InstanceStatus {
      * Case-insensitive matching.
      *
      * @param status the status string
-     * @return the matching InstanceStatus, or UNKNOWN if not found
+     * @return the matching InstanceStatus, or UNAVAILABLE if not found
      */
     @JsonCreator
     public static InstanceStatus fromString(String status) {
         if (status == null || status.isBlank()) {
-            return UNKNOWN;
+            return UNAVAILABLE;
         }
         for (InstanceStatus s : values()) {
             if (s.displayName.equalsIgnoreCase(status)) {
                 return s;
             }
         }
-        return UNKNOWN;
+        return UNAVAILABLE;
     }
 }

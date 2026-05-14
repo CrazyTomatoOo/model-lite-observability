@@ -41,7 +41,7 @@ class ModelServiceControllerTest {
     void validRequestReturns200WithCorrectStructure() throws Exception {
         ModelServiceDTO dto = ModelServiceDTO.builder()
                 .instanceName("svc-a")
-                .status(InstanceStatus.RUNNING)
+                .status(InstanceStatus.AVAILABLE)
                 .currentReplicas(2)
                 .desiredReplicas(3)
                 .build();
@@ -60,7 +60,7 @@ class ModelServiceControllerTest {
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.pages").value(1))
                 .andExpect(jsonPath("$.data.records[0].instanceName").value("svc-a"))
-                .andExpect(jsonPath("$.data.records[0].status").value("Running"))
+                .andExpect(jsonPath("$.data.records[0].status").value("Available"))
                 .andExpect(jsonPath("$.data.records[0].currentReplicas").value(2))
                 .andExpect(jsonPath("$.data.records[0].desiredReplicas").value(3))
                 .andExpect(jsonPath("$.data.records[0].metrics").doesNotExist());
@@ -81,13 +81,13 @@ class ModelServiceControllerTest {
     @Test
     void filterParamsPassedToService() throws Exception {
         when(modelServiceService.listServices(any(PaginationRequest.class),
-                eq("ns1"), eq("MindIE"), eq("Running")))
+                eq("ns1"), eq("MindIE"), eq("Available")))
                 .thenReturn(PageDTO.of(List.of(), 1, 20, 0));
 
         mockMvc.perform(get("/model-services")
                         .param("namespace", "ns1")
                         .param("framework", "MindIE")
-                        .param("status", "Running"))
+                        .param("status", "Available"))
                 .andExpect(status().isOk());
     }
 
