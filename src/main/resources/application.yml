@@ -78,6 +78,14 @@ observability:
         promql-template: 'num_requests_running{model_name="%s"}'
         display-name: Concurrent Connections
         unit: connections
+      - metric-name: waiting_connections
+        promql-template: 'num_requests_waiting{model_name="%s"}'
+        display-name: Waiting Connections
+        unit: connections
+      - metric-name: total_connections
+        promql-template: 'num_requests_running{model_name="%s"} + num_requests_waiting{model_name="%s"}'
+        display-name: Total Connections
+        unit: connections
       - metric-name: success_rate
         promql-template: '(request_success_total{model_name="%s"} / request_received_total{model_name="%s"}) * 100'
         display-name: Request Success Rate

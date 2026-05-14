@@ -28,15 +28,15 @@ public class MockPrometheusClient implements PrometheusClient {
 
     static {
         PROFILES.put("llama3-70b", new ModelProfile(
-                500.0, 30.0, 500.0, 1200.0, 800.0, 10.0, 128.0, 0.99,
+                500.0, 30.0, 500.0, 1200.0, 800.0, 10.0, 3.0, 13.0, 128.0, 0.99,
                 10000L, 100L, 9900L
         ));
         PROFILES.put("qwen2-7b", new ModelProfile(
-                250.0, 18.0, 300.0, 900.0, 600.0, 8.0, 64.0, 0.98,
+                250.0, 18.0, 300.0, 900.0, 600.0, 8.0, 2.0, 10.0, 64.0, 0.98,
                 8000L, 160L, 7840L
         ));
         PROFILES.put("glm4-9b", new ModelProfile(
-                150.0, 30.0, 800.0, 2500.0, 120.0, 2.5, 12.0, 0.995,
+                150.0, 30.0, 800.0, 2500.0, 120.0, 2.5, 0.5, 3.0, 12.0, 0.995,
                 1500L, 3L, 1497L
         ));
     }
@@ -114,7 +114,9 @@ public class MockPrometheusClient implements PrometheusClient {
         if (promQL.contains("prompt_throughput")) return "prompt_throughput";
         if (promQL.contains("generation_throughput") || promQL.contains("decode_throughput")) return "decode_throughput";
         if (promQL.contains("rate(") && promQL.contains("request_received")) return "qps";
-        if (promQL.contains("num_requests_running")) return "connections";
+        if (promQL.contains("num_requests_running") && !promQL.contains("+")) return "connections";
+        if (promQL.contains("num_requests_waiting") && !promQL.contains("+")) return "waiting_connections";
+        if (promQL.contains("num_requests_running") && promQL.contains("num_requests_waiting")) return "total_connections";
         if (promQL.contains("request_success") && promQL.contains("request_received") && promQL.contains("/")) return "success_rate";
         if (promQL.contains("request_failed")) return "failed_requests";
         if (promQL.contains("request_success")) return "success_requests";
@@ -132,6 +134,8 @@ public class MockPrometheusClient implements PrometheusClient {
             case "decode_throughput"  -> profile.decodeThroughput;
             case "qps"               -> profile.qps;
             case "connections"        -> profile.connections;
+            case "waiting_connections" -> profile.waitingConnections;
+            case "total_connections"  -> profile.totalConnections;
             case "success_rate"       -> profile.successRate * 100;
             case "total_requests"     -> (double) profile.totalRequests;
             case "failed_requests"    -> (double) profile.failedRequests;
@@ -193,7 +197,7 @@ public class MockPrometheusClient implements PrometheusClient {
         return switch (metricType) {
             case "ttft", "tpot"              -> 0.12;
             case "prompt_throughput", "decode_throughput", "qps" -> 0.10;
-            case "connections"               -> 0.05;
+            case "connections", "waiting_connections", "total_connections" -> 0.05;
             case "generation_tokens"         -> 0.08;
             case "success_rate"              -> 0.02;
             case "total_requests", "failed_requests", "success_requests" -> 0.05;
@@ -209,6 +213,8 @@ public class MockPrometheusClient implements PrometheusClient {
             double decodeThroughput,
             double qps,
             double connections,
+            double waitingConnections,
+            double totalConnections,
             double successRate,
             long totalRequests,
             long failedRequests,

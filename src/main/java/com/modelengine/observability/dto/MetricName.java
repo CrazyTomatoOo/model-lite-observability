@@ -2,8 +2,8 @@ package com.modelengine.observability.dto;
 
 /**
  * Enumeration of supported metric names for the Observability API.
- * These 11 metrics cover TTFT, TPOT, token throughput, QPS, connections,
- * success rate, and request counts.
+ * These 13 metrics cover TTFT, TPOT, token throughput, QPS, connections,
+ * waiting connections, total connections, success rate, and request counts.
  */
 public enum MetricName {
 
@@ -14,6 +14,8 @@ public enum MetricName {
     DECODE_THROUGHPUT("decode_throughput"),
     QPS("qps"),
     CONNECTIONS("connections"),
+    WAITING_CONNECTIONS("waiting_connections"),
+    TOTAL_CONNECTIONS("total_connections"),
     SUCCESS_RATE("success_rate"),
     TOTAL_REQUESTS("total_requests"),
     FAILED_REQUESTS("failed_requests"),

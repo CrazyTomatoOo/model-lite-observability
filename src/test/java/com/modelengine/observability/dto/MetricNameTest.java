@@ -71,12 +71,12 @@ class MetricNameTest {
         }
     }
 
-    // ─── MetricName enum exists for all 11 values ───
+    // ─── MetricName enum exists for all 13 values ───
 
     @Test
     void allElevenMetricNamesExist() {
         MetricName[] values = MetricName.values();
-        assertEquals(11, values.length, "There must be exactly 11 metric names");
+        assertEquals(13, values.length, "There must be exactly 13 metric names");
 
         assertNotNull(MetricName.valueOf("TTFT"));
         assertNotNull(MetricName.valueOf("TPOT"));
@@ -85,6 +85,8 @@ class MetricNameTest {
         assertNotNull(MetricName.valueOf("DECODE_THROUGHPUT"));
         assertNotNull(MetricName.valueOf("QPS"));
         assertNotNull(MetricName.valueOf("CONNECTIONS"));
+        assertNotNull(MetricName.valueOf("WAITING_CONNECTIONS"));
+        assertNotNull(MetricName.valueOf("TOTAL_CONNECTIONS"));
         assertNotNull(MetricName.valueOf("SUCCESS_RATE"));
         assertNotNull(MetricName.valueOf("TOTAL_REQUESTS"));
         assertNotNull(MetricName.valueOf("FAILED_REQUESTS"));
@@ -94,7 +96,8 @@ class MetricNameTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "ttft", "tpot", "generation_tokens", "prompt_throughput",
-            "decode_throughput", "qps", "connections", "success_rate",
+            "decode_throughput", "qps", "connections", "waiting_connections",
+            "total_connections", "success_rate",
             "total_requests", "failed_requests", "success_requests"
     })
     void allMetricValuesAreValid(String metricValue) {
@@ -104,7 +107,8 @@ class MetricNameTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "ttft", "tpot", "generation_tokens", "prompt_throughput",
-            "decode_throughput", "qps", "connections", "success_rate",
+            "decode_throughput", "qps", "connections", "waiting_connections",
+            "total_connections", "success_rate",
             "total_requests", "failed_requests", "success_requests"
     })
     void fromValueReturnsCorrectEnum(String metricValue) {
@@ -120,11 +124,14 @@ class MetricNameTest {
         assertEquals("decode_throughput", MetricName.DECODE_THROUGHPUT.getValue());
         assertEquals("qps", MetricName.QPS.getValue());
         assertEquals("connections", MetricName.CONNECTIONS.getValue());
+        assertEquals("waiting_connections", MetricName.WAITING_CONNECTIONS.getValue());
+        assertEquals("total_connections", MetricName.TOTAL_CONNECTIONS.getValue());
         assertEquals("success_rate", MetricName.SUCCESS_RATE.getValue());
         assertEquals("total_requests", MetricName.TOTAL_REQUESTS.getValue());
         assertEquals("failed_requests", MetricName.FAILED_REQUESTS.getValue());
         assertEquals("success_requests", MetricName.SUCCESS_REQUESTS.getValue());
     }
+
 
     // ─── Invalid metric names are rejected ───
 
@@ -177,7 +184,8 @@ class MetricNameTest {
         MetricsRangeQueryDTO dto = MetricsRangeQueryDTO.builder()
                 .metrics(List.of(
                         "ttft", "tpot", "generation_tokens", "prompt_throughput",
-                        "decode_throughput", "qps", "connections", "success_rate",
+                        "decode_throughput", "qps", "connections", "waiting_connections",
+                        "total_connections", "success_rate",
                         "total_requests", "failed_requests", "success_requests"
                 ))
                 .startTime("2025-01-01T00:00:00Z")
