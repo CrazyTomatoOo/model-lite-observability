@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.modelengine.observability.service.inference.PodStatus;
 /**
  * DTO representing detailed status information.
  * Matches the DetailParams schema from the OpenAPI spec.
@@ -17,6 +18,6 @@ public class DetailParams {
 
     private String group;
     private String name;
-    private String status;
+    private PodStatus status;
     private String detail;
 }

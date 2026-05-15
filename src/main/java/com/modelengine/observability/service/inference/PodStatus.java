@@ -7,24 +7,18 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * Enumeration of possible pod statuses.
  */
 public enum PodStatus {
-    INSUFFICIENT_RESOURCE("InsufficientResource"),
-    UNSCHEDULABLE("Unschedulable"),
-    IMAGE_PULL_FAILURE("ImagePullFailure"),
-    ERROR("Error"),
-    TERMINATING("Terminating"),
-    STARTING("Starting"),
-    HEALTHY("Healthy"),
-    MOUNT_FAILURE("MountFailure");
-
-    private final String displayName;
-
-    PodStatus(String displayName) {
-        this.displayName = displayName;
-    }
+    INSUFFICIENT_RESOURCE,
+    UNSCHEDULABLE,
+    IMAGE_PULL_FAILURE,
+    ERROR,
+    TERMINATING,
+    STARTING,
+    HEALTHY,
+    MOUNT_FAILURE;
 
     @JsonValue
     public String getDisplayName() {
-        return displayName;
+        return name();
     }
 
     /**
@@ -40,7 +34,7 @@ public enum PodStatus {
             return ERROR;
         }
         for (PodStatus s : values()) {
-            if (s.displayName.equalsIgnoreCase(status)) {
+            if (s.name().equalsIgnoreCase(status)) {
                 return s;
             }
         }

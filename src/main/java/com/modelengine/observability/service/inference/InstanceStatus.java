@@ -8,24 +8,18 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * Covers the full lifecycle: starting → available → stopping → stopped, etc.
  */
 public enum InstanceStatus {
-    PARTIAL_RUNNING("PartialRunning"),
-    WAITING("Waiting"),
-    AVAILABLE("Available"),
-    UNAVAILABLE("Unavailable"),
-    STOPPED("Stopped"),
-    STOPPING("Stopping"),
-    DELETING("Deleting"),
-    STARTING("Starting");
-
-    private final String displayName;
-
-    InstanceStatus(String displayName) {
-        this.displayName = displayName;
-    }
+    PARTIAL_RUNNING,
+    WAITING,
+    AVAILABLE,
+    UNAVAILABLE,
+    STOPPED,
+    STOPPING,
+    DELETING,
+    STARTING;
 
     @JsonValue
     public String getDisplayName() {
-        return displayName;
+        return name();
     }
 
     /**
@@ -41,7 +35,7 @@ public enum InstanceStatus {
             return UNAVAILABLE;
         }
         for (InstanceStatus s : values()) {
-            if (s.displayName.equalsIgnoreCase(status)) {
+            if (s.name().equalsIgnoreCase(status)) {
                 return s;
             }
         }

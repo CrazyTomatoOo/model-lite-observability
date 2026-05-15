@@ -60,7 +60,7 @@ class ModelServiceControllerTest {
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.pages").value(1))
                 .andExpect(jsonPath("$.data.records[0].instanceName").value("svc-a"))
-                .andExpect(jsonPath("$.data.records[0].status").value("Available"))
+                .andExpect(jsonPath("$.data.records[0].status").value("AVAILABLE"))
                 .andExpect(jsonPath("$.data.records[0].currentReplicas").value(2))
                 .andExpect(jsonPath("$.data.records[0].desiredReplicas").value(3))
                 .andExpect(jsonPath("$.data.records[0].metrics").doesNotExist());
@@ -81,13 +81,13 @@ class ModelServiceControllerTest {
     @Test
     void filterParamsPassedToService() throws Exception {
         when(modelServiceService.listServices(any(PaginationRequest.class),
-                eq("ns1"), eq("MindIE"), eq("Available")))
+                eq("ns1"), eq("MindIE"), eq("AVAILABLE")))
                 .thenReturn(PageDTO.of(List.of(), 1, 20, 0));
 
         mockMvc.perform(get("/model-services")
                         .param("namespace", "ns1")
                         .param("framework", "MindIE")
-                        .param("status", "Available"))
+                        .param("status", "AVAILABLE"))
                 .andExpect(status().isOk());
     }
 

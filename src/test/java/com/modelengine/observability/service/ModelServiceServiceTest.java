@@ -260,7 +260,7 @@ class ModelServiceServiceTest {
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
-                defaultRequest(), null, null, "Available");
+                defaultRequest(), null, null, "AVAILABLE");
 
         assertEquals(1, result.getRecords().size());
         assertEquals("svc-a", result.getRecords().get(0).getInstanceName());
@@ -275,7 +275,7 @@ class ModelServiceServiceTest {
         ));
 
         PageDTO<ModelServiceDTO> result = modelServiceService.listServices(
-                defaultRequest(), "ns1", null, "Available");
+                defaultRequest(), "ns1", null, "AVAILABLE");
 
         assertEquals(1, result.getRecords().size());
         assertEquals("svc-a", result.getRecords().get(0).getInstanceName());

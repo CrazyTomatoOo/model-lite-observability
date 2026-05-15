@@ -48,7 +48,7 @@ public class ModelServiceService {
         List<InferenceInstance> filtered = instances.stream()
                 .filter(i -> isBlank(namespace) || Objects.equals(i.getNamespace(), namespace))
                 .filter(i -> isBlank(framework) || Objects.equals(i.getFramework(), framework))
-                .filter(i -> isBlank(status) || Objects.equals(i.getStatus().getDisplayName(), status))
+                .filter(i -> isBlank(status) || Objects.equals(i.getStatus(), InstanceStatus.fromString(status)))
                 .collect(Collectors.toList());
 
         List<ModelServiceDTO> dtos = filtered.stream()
@@ -65,24 +65,61 @@ public class ModelServiceService {
         String name = instance.getInstanceName();
 
         List<PodInfoDTO> pods = java.util.stream.IntStream.range(0, n)
-                .mapToObj(i -> PodInfoDTO.builder()
-                        .name(name + "-" + i)
-                        .nodeName("node-" + (i + 1))
-                        .ip("10.1.0." + (10 + i))
-                        .status(PodStatus.HEALTHY)
-                        .ready(true)
-                        .restartCount(0)
-                        .metricsEndpoint("http://" + name + "-" + i + ":9091/metrics")
-                        .build())
+                .mapToObj(i -> {
+                    PodStatus podStatus = mapPodStatus(instance, i);
+                    boolean ready = podStatus == PodStatus.HEALTHY;
+                    int restarts = podStatus == PodStatus.ERROR || podStatus == PodStatus.IMAGE_PULL_FAILURE ? 1 + i : 0;
+                    return PodInfoDTO.builder()
+                            .name(name + "-" + i)
+                            .nodeName("node-" + (i + 1))
+                            .ip("10.1.0." + (10 + i))
+                            .status(podStatus)
+                            .ready(ready)
+                            .restartCount(restarts)
+                            .metricsEndpoint("http://" + name + "-" + i + ":9091/metrics")
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         List<DetailParams> details = java.util.stream.IntStream.range(0, n)
-                .mapToObj(i -> DetailParams.builder()
-                        .group("Pod")
-                        .name(name + "-" + i)
-                        .status("Running")
-                        .detail("Pod " + name + "-" + i + " is running on node-" + (i + 1))
-                        .build())
+                .mapToObj(i -> {
+                    PodStatus podStatus = mapPodStatus(instance, i);
+                    String detailText;
+                    switch (podStatus) {
+                        case HEALTHY:
+                            detailText = "Pod " + name + "-" + i + " is running on node-" + (i + 1);
+                            break;
+                        case STARTING:
+                            detailText = "Pod " + name + "-" + i + " is starting on node-" + (i + 1);
+                            break;
+                        case ERROR:
+                            detailText = "Pod " + name + "-" + i + " has error on node-" + (i + 1);
+                            break;
+                        case TERMINATING:
+                            detailText = "Pod " + name + "-" + i + " is terminating on node-" + (i + 1);
+                            break;
+                        case UNSCHEDULABLE:
+                            detailText = "Pod " + name + "-" + i + " is unschedulable";
+                            break;
+                        case INSUFFICIENT_RESOURCE:
+                            detailText = "Pod " + name + "-" + i + " has insufficient resources";
+                            break;
+                        case IMAGE_PULL_FAILURE:
+                            detailText = "Pod " + name + "-" + i + " failed to pull image";
+                            break;
+                        case MOUNT_FAILURE:
+                            detailText = "Pod " + name + "-" + i + " failed to mount volume";
+                            break;
+                        default:
+                            detailText = "Pod " + name + "-" + i + " status unknown";
+                    }
+                    return DetailParams.builder()
+                            .group("Pod")
+                            .name(name + "-" + i)
+                            .status(podStatus)
+                            .detail(detailText)
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         // Build fully-populated default DTO first (no nulls)
@@ -246,25 +283,25 @@ public class ModelServiceService {
                                 DetailParams.builder()
                                         .group("Pod")
                                         .name("llama3-70b-0")
-                                        .status("Running")
+                                        .status(PodStatus.HEALTHY)
                                         .detail("Pod llama3-70b-0 is running on node-1")
                                         .build(),
                                 DetailParams.builder()
                                         .group("Pod")
                                         .name("llama3-70b-1")
-                                        .status("Running")
+                                        .status(PodStatus.HEALTHY)
                                         .detail("Pod llama3-70b-1 is running on node-2")
                                         .build(),
                                 DetailParams.builder()
                                         .group("Pod")
                                         .name("llama3-70b-2")
-                                        .status("Running")
+                                        .status(PodStatus.HEALTHY)
                                         .detail("Pod llama3-70b-2 is running on node-3")
                                         .build(),
                                 DetailParams.builder()
                                         .group("Pod")
                                         .name("llama3-70b-3")
-                                        .status("Running")
+                                        .status(PodStatus.HEALTHY)
                                         .detail("Pod llama3-70b-3 is running on node-4")
                                         .build()))
                         .pods(pods)
@@ -347,19 +384,49 @@ public class ModelServiceService {
                                 DetailParams.builder()
                                         .group("Pod")
                                         .name("qwen2-7b-0")
-                                        .status("Running")
+                                        .status(PodStatus.HEALTHY)
                                         .detail("Pod qwen2-7b-0 is running on node-1")
                                         .build(),
                                 DetailParams.builder()
                                         .group("Pod")
                                         .name("qwen2-7b-1")
-                                        .status("Running")
+                                        .status(PodStatus.HEALTHY)
                                         .detail("Pod qwen2-7b-1 is running on node-2")
                                         .build()))
                         .pods(pods)
                         .build();
             default:
                 return builder.build();
+        }
+    }
+
+    /**
+     * Maps an inference instance to the appropriate PodStatus for its mock pods.
+     * Ensures all PodStatus enum values (including underscore ones) appear in mock data.
+     *
+     * @param instance the inference instance
+     * @param podIndex the index of the pod within this instance
+     * @return the PodStatus for this pod
+     */
+    private PodStatus mapPodStatus(InferenceInstance instance, int podIndex) {
+        InstanceStatus status = instance.getStatus();
+        String name = instance.getInstanceName();
+
+        // Distribute missing underscore statuses across specific instances
+        switch (name) {
+            case "chatglm3-6b": return PodStatus.INSUFFICIENT_RESOURCE;
+            case "bloom-7b1": return PodStatus.IMAGE_PULL_FAILURE;
+            case "bert-base-chinese": return PodStatus.MOUNT_FAILURE;
+            case "mixtral-8x7b": return PodStatus.UNSCHEDULABLE;
+            case "tinyllama-1.1b": return PodStatus.UNSCHEDULABLE;
+            default:
+                return switch (status) {
+                    case AVAILABLE -> PodStatus.HEALTHY;
+                    case PARTIAL_RUNNING -> (podIndex == 0) ? PodStatus.ERROR : PodStatus.HEALTHY;
+                    case WAITING, STARTING -> PodStatus.STARTING;
+                    case UNAVAILABLE -> PodStatus.ERROR;
+                    case STOPPED, STOPPING, DELETING -> PodStatus.TERMINATING;
+                };
         }
     }
 

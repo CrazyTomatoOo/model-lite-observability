@@ -380,13 +380,13 @@ class DtoSerializationTest {
         void serializeAllFields() throws Exception {
             DetailParams params = DetailParams.builder()
                     .group("Pod").name("llama2-7b-chat-xxx")
-                    .status("Running").detail("Container ready")
+                    .status(PodStatus.HEALTHY).detail("Container ready")
                     .build();
 
             String json = objectMapper.writeValueAsString(params);
             assertTrue(json.contains("\"group\" : \"Pod\""));
             assertTrue(json.contains("\"name\" : \"llama2-7b-chat-xxx\""));
-            assertTrue(json.contains("\"status\" : \"Running\""));
+            assertTrue(json.contains("\"status\" : \"Healthy\""));
             assertTrue(json.contains("\"detail\" : \"Container ready\""));
         }
 
@@ -394,7 +394,7 @@ class DtoSerializationTest {
         @DisplayName("should round-trip correctly")
         void roundTrip() throws Exception {
             DetailParams original = DetailParams.builder()
-                    .group("Pod").name("test").status("Failed").detail("OOMKilled").build();
+                    .group("Pod").name("test").status(PodStatus.ERROR).detail("OOMKilled").build();
             String json = objectMapper.writeValueAsString(original);
             DetailParams deserialized = objectMapper.readValue(json, DetailParams.class);
             assertEquals(original, deserialized);
@@ -524,12 +524,12 @@ class DtoSerializationTest {
             String json = """
                 {
                     "instanceName": "llama2-7b-chat",
-                    "status": "Available",
+                    "status": "AVAILABLE",
                     "currentReplicas": 3,
                     "desiredReplicas": 3,
                     "address": "http://example.com:8080",
                     "modelMeta": {"modelName": "llama2-7b"},
-                    "pods": [{"name": "pod-1", "status": "Running"}]
+                    "pods": [{"name": "pod-1", "status": "HEALTHY"}]
                 }
                 """;
             ModelServiceDTO dto = objectMapper.readValue(json, ModelServiceDTO.class);
