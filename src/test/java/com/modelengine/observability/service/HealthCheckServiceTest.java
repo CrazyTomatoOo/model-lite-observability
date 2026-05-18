@@ -24,13 +24,12 @@ class HealthCheckServiceTest {
     }
     @Test
     void checkHealthAllHealthy() {
-        when(properties.getClusterId()).thenReturn("test-cluster");
         when(properties.getMeVersion()).thenReturn("2.0.0");
 
         HealthStatusDTO result = healthCheckService.checkHealth();
 
         assertEquals("healthy", result.getStatus());
-        assertEquals("test-cluster", result.getClusterId());
+        assertEquals("9e9be3cf5a3440988f90d06c958430ae", result.getClusterId());
         assertEquals("2.0.0", result.getVersion());
         assertEquals("2.0.0", result.getMeVersion());
         assertNotNull(result.getTimestamp());
@@ -40,7 +39,6 @@ class HealthCheckServiceTest {
 
     @Test
     void checkHealthReturnsHealthyAlways() {
-        when(properties.getClusterId()).thenReturn("test-cluster");
         when(properties.getMeVersion()).thenReturn("2.0.0");
 
         HealthStatusDTO result = healthCheckService.checkHealth();
@@ -51,7 +49,6 @@ class HealthCheckServiceTest {
     }
     @Test
     void checkHealthAlwaysConnected() {
-        when(properties.getClusterId()).thenReturn("test-cluster");
         when(properties.getMeVersion()).thenReturn("2.0.0");
 
         HealthStatusDTO result = healthCheckService.checkHealth();
@@ -62,7 +59,6 @@ class HealthCheckServiceTest {
     }
     @Test
     void checkHealthAlwaysReturnsConnected() {
-        when(properties.getClusterId()).thenReturn("test-cluster");
         when(properties.getMeVersion()).thenReturn("2.0.0");
 
         HealthStatusDTO result = healthCheckService.checkHealth();
@@ -73,7 +69,6 @@ class HealthCheckServiceTest {
     }
     @Test
     void componentsAreFlatStrings() {
-        when(properties.getClusterId()).thenReturn("test-cluster");
         when(properties.getMeVersion()).thenReturn("2.0.0");
 
         HealthStatusDTO result = healthCheckService.checkHealth();
@@ -84,17 +79,15 @@ class HealthCheckServiceTest {
     }
     @Test
     void checkHealthHasClusterIdAndMeVersion() {
-        when(properties.getClusterId()).thenReturn("prod-cluster-01");
         when(properties.getMeVersion()).thenReturn("3.1.4");
 
         HealthStatusDTO result = healthCheckService.checkHealth();
 
-        assertEquals("prod-cluster-01", result.getClusterId());
+        assertEquals("9e9be3cf5a3440988f90d06c958430ae", result.getClusterId());
         assertEquals("3.1.4", result.getMeVersion());
     }
     @Test
     void checkHealthIncludesTimestamp() {
-        when(properties.getClusterId()).thenReturn("test-cluster");
         when(properties.getMeVersion()).thenReturn("2.0.0");
 
         HealthStatusDTO result = healthCheckService.checkHealth();

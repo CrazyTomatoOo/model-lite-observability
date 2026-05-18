@@ -3,6 +3,9 @@ package com.modelengine.observability.service.inference;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 /**
  * Enumeration of possible pod statuses.
  */
@@ -18,7 +21,9 @@ public enum PodStatus {
 
     @JsonValue
     public String getDisplayName() {
-        return name();
+        return Arrays.stream(name().split("_"))
+                .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase())
+                .collect(Collectors.joining(" "));
     }
 
     /**

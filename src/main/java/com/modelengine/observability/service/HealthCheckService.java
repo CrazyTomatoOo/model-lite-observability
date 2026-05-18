@@ -46,7 +46,7 @@ public class HealthCheckService {
                 .status(STATUS_HEALTHY)
                 .version(properties.getMeVersion())
                 .timestamp(Instant.now())
-                .clusterId(properties.getClusterId())
+                .clusterId("9e9be3cf5a3440988f90d06c958430ae")
                 .meVersion(properties.getMeVersion())
                 .components(components)
                 .build();

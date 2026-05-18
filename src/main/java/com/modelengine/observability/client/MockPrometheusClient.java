@@ -70,14 +70,16 @@ public class MockPrometheusClient implements PrometheusClient {
     public PrometheusResponse queryRange(String promQL, Instant start, Instant end, Duration step, Duration timeout) {
         String modelName = extractModelName(promQL);
         String metricType = detectMetricType(promQL);
+        // Use current time for mock data end time
+        Instant now = Instant.now();
+        Instant effectiveEnd = end.isAfter(now) ? now : end;
         log.debug("Mock range query: metric={}, model={}, start={}, end={}, step={}",
-                metricType, modelName, start, end, step);
+                metricType, modelName, start, effectiveEnd, step);
 
         ModelProfile profile = PROFILES.getOrDefault(modelName, PROFILES.get("llama3-70b"));
         double baseValue = getMetricValue(profile, metricType, true);
 
-        List<List<Object>> values = generateTimeSeries(start, end, step, baseValue, metricType);
-
+        List<List<Object>> values = generateTimeSeries(start, effectiveEnd, step, baseValue, metricType);
         PrometheusResult result = PrometheusResult.builder()
                 .metric(Map.of("model_name", modelName, "__name__", metricType))
                 .values(values)
